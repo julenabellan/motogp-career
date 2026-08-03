@@ -162,8 +162,13 @@ function buildDebutOffers() {
 }
 
 function offerCardHTML(team, champ) {
+  const logo = teamLogo(team.name, champ);
+  const logoHTML = logo
+    ? `<img class="offer-logo" src="${logo}" alt="" loading="lazy" onerror="this.remove()">`
+    : "";
   return `
     <div class="offer-top">
+      ${logoHTML}
       <span class="offer-team-name">${team.name}</span>
       <span class="offer-champ-badge">${champ}</span>
     </div>
@@ -314,7 +319,6 @@ function renderDashboard() {
   renderHistory();
   renderMarket();
   renderChampionBanner();
-  renderStreak();
 }
 
 function renderChampionBanner() {
@@ -333,46 +337,6 @@ $("#btn-close-banner").addEventListener("click", () => {
   saveState();
   renderChampionBanner();
 });
-
-// ---------------- Indicador de "en racha" ----------------
-// Mira el historial desde la temporada más reciente hacia atrás y cuenta
-// dos rachas independientes: temporadas consecutivas mejorando de OVR, y
-// temporadas consecutivas con al menos un podio. Se muestra la que sea
-// más relevante (a partir de 3 temporadas seguidas).
-function computeStreaks() {
-  const h = state.history;
-  let ovrStreak = 0;
-  for (let i = h.length - 1; i >= 1; i--) {
-    if (h[i].ovr > h[i - 1].ovr) ovrStreak++;
-    else break;
-  }
-  let podStreak = 0;
-  for (let i = h.length - 1; i >= 0; i--) {
-    if (h[i].pod >= 1) podStreak++;
-    else break;
-  }
-  return { ovrStreak, podStreak };
-}
-
-function renderStreak() {
-  const el = $("#streak-badge");
-  const { ovrStreak, podStreak } = computeStreaks();
-
-  let text = null;
-  if (podStreak >= 3 && podStreak >= ovrStreak) {
-    text = `🔥 En racha: podio ${podStreak} temporadas seguidas`;
-  } else if (ovrStreak >= 3) {
-    text = `🔥 En racha: mejorando ${ovrStreak} temporadas seguidas`;
-  }
-
-  if (text) {
-    el.textContent = text;
-    el.classList.add("active");
-  } else {
-    el.textContent = "";
-    el.classList.remove("active");
-  }
-}
 
 // Flechita de comparación de una estadística con la temporada anterior.
 // higherIsBetter=false para estadísticas donde menos es mejor (posición).
@@ -700,6 +664,14 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged) {
   // Y el +3, en sí, sigue siendo la excepción, no la norma (pizca: ahora
   // solo se recorta a +2 el 22% de las veces, antes 32%).
   if (rounded === 3 && eventKind !== "positive" && Math.random() < 0.22) rounded = 2;
+
+  // 7. Plus por dar el salto a una categoría exigente: al entrar por
+  // primera vez en MotoGP o en WorldSBK (Superbikes) se suma un +2 de OVR
+  // FIJO, además de toda la subida "normal" ya calculada arriba, para que
+  // el piloto llegue mejor preparado a plantar cara desde el primer año.
+  if (categoryChanged && (state.championship === "MotoGP" || state.championship === "WorldSBK")) {
+    rounded += 2;
+  }
 
   return { growth: rounded, eventText };
 }
