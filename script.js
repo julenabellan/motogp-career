@@ -853,6 +853,42 @@ function simulateSeason(categoryChanged = false) {
 // ============================================================
 // RETIRADA
 // ============================================================
+
+// Lista de equipos únicos por los que ha pasado el piloto en toda su
+// carrera, en el orden en que los fichó por primera vez (deduplicados por
+// nombre — si vuelve a un equipo más tarde no se repite).
+function getCareerTeams() {
+  const seen = new Set();
+  const teams = [];
+  state.history.forEach((s) => {
+    if (!seen.has(s.team)) {
+      seen.add(s.team);
+      teams.push({ name: s.team, championship: s.championship });
+    }
+  });
+  return teams;
+}
+
+function renderCareerTeamsList(containerSelector) {
+  const teams = getCareerTeams();
+  $(containerSelector).innerHTML = teams.map((t) => {
+    const logo = teamLogo(t.name, t.championship);
+    const color = teamColor(t.name, t.championship);
+    const logoHTML = logo
+      ? `<img class="retire-team-logo" src="${logo}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">`
+      : "";
+    return `
+      <div class="retire-team-chip">
+        <span class="retire-team-visual">
+          ${logoHTML}
+          <span class="retire-team-dot" style="background:${color}; display:${logo ? "none" : "block"};"></span>
+        </span>
+        <span class="retire-team-name">${t.name}</span>
+      </div>
+    `;
+  }).join("");
+}
+
 function retireCareer() {
   const h = state.history;
   const totals = h.reduce((acc, s) => {
@@ -878,6 +914,7 @@ function retireCareer() {
     <div class="retire-stat"><span class="label">📈 OVR máximo</span><span class="value">${peakOvr}</span></div>
     <div class="retire-stat"><span class="label">🏁 Temporadas</span><span class="value">${h.length}</span></div>
   `;
+  renderCareerTeamsList("#retire-teams");
 
   localStorage.removeItem(STORAGE_KEY);
   showScreen("screen-retiro");
@@ -891,7 +928,23 @@ function retireCareer() {
 // calculan para la pantalla de retirada.
 // ============================================================
 function drawTradingCard(ctx, canvas, info, flagImgEl) {
-  const W = canvas.width, H = canvas.height;
+  const W = 640;
+  const teams = info.careerTeams || [];
+
+  // Calcular cuánto espacio hace falta para los logos de los equipos ANTES
+  // de fijar el tamaño del canvas (el nº de filas depende de cuántos
+  // equipos distintos tuvo el piloto a lo largo de la carrera).
+  const logosPerRow = 7, logoSize = 52, logoGap = 14;
+  const teamRows = teams.length ? Math.ceil(teams.length / logosPerRow) : 0;
+  const teamsSectionH = teams.length ? 46 + teamRows * (logoSize + 30) : 0;
+
+  const baseH = 800;   // hasta el final de la cuadrícula de estadísticas
+  const footerH = 70;
+  const H = baseH + teamsSectionH + footerH;
+
+  canvas.width = W;
+  canvas.height = H;
+
   const r = state.rider;
   const accent = teamColor(info.lastTeam, info.lastChamp);
 
@@ -960,10 +1013,50 @@ function drawTradingCard(ctx, canvas, info, flagImgEl) {
     ctx.fillText(String(value), x, y + 36);
   });
 
+  // Equipos de la carrera — logo si se pudo cargar, si no un círculo con el
+  // color del equipo, en filas centradas de hasta 7.
+  if (teams.length) {
+    const sectionTop = baseH - 26;
+    ctx.fillStyle = "#5A5A5E";
+    ctx.font = "700 13px Inter, sans-serif";
+    ctx.fillText("EQUIPOS DE LA CARRERA", W / 2, sectionTop);
+
+    teams.forEach((t, i) => {
+      const row = Math.floor(i / logosPerRow);
+      const itemsInRow = Math.min(logosPerRow, teams.length - row * logosPerRow);
+      const rowWidth = itemsInRow * (logoSize + logoGap) - logoGap;
+      const col = i % logosPerRow;
+      const x = W / 2 - rowWidth / 2 + col * (logoSize + logoGap);
+      const y = sectionTop + 24 + row * (logoSize + 30);
+
+      if (t.logoImg) {
+        ctx.drawImage(t.logoImg, x, y, logoSize, logoSize);
+      } else {
+        ctx.fillStyle = t.color || "#3B82F6";
+        ctx.beginPath();
+        ctx.arc(x + logoSize / 2, y + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+  }
+
   // Pie
   ctx.fillStyle = "#5A5A5E";
   ctx.font = "600 14px Inter, sans-serif";
-  ctx.fillText(`Se retiró a los ${info.lastAge} años`, W / 2, H - 40);
+  ctx.fillText(`Se retiró a los ${info.lastAge} años`, W / 2, H - 30);
+}
+
+// Carga una imagen sin romper el flujo si falla (CORS, 404, etc.) —
+// se usa tanto para la bandera como para los logos de los equipos.
+function loadImageSafe(src) {
+  return new Promise((resolve) => {
+    if (!src) { resolve(null); return; }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
 }
 
 function generateAndDownloadTradingCard() {
@@ -975,6 +1068,12 @@ function generateAndDownloadTradingCard() {
     return acc;
   }, { cg: 0, pod: 0, pol: 0, titles: 0 });
 
+  const careerTeams = getCareerTeams().map((t) => ({
+    ...t,
+    color: teamColor(t.name, t.championship),
+    logoSrc: teamLogo(t.name, t.championship),
+  }));
+
   const info = {
     totals,
     peakOvr: h.length ? Math.max(...h.map((s) => s.ovr), state.ovr) : state.ovr,
@@ -982,6 +1081,7 @@ function generateAndDownloadTradingCard() {
     lastAge: h.length ? h[h.length - 1].age : state.age,
     lastChamp: h.length ? h[h.length - 1].championship : state.championship,
     lastTeam: h.length ? h[h.length - 1].team : state.team.name,
+    careerTeams,
   };
 
   const canvas = $("#trading-card-canvas");
@@ -1001,27 +1101,26 @@ function generateAndDownloadTradingCard() {
     btn.disabled = false;
   };
 
-  const renderWithFlag = (flagEl) => {
-    drawTradingCard(ctx, canvas, info, flagEl);
-    try {
-      finish(canvas.toDataURL("image/png"));
-    } catch (err) {
-      // El navegador puede "contaminar" el canvas si la bandera no permite
-      // CORS: en ese caso se redibuja igual, pero sin la imagen de bandera.
-      drawTradingCard(ctx, canvas, info, null);
-      finish(canvas.toDataURL("image/png"));
-    }
-  };
+  const flagSrc = r.nacionalidad ? `https://flagcdn.com/w160/${r.nacionalidad.code.toLowerCase()}.png` : null;
 
-  if (r.nacionalidad) {
-    const flag = new Image();
-    flag.crossOrigin = "anonymous";
-    flag.onload = () => renderWithFlag(flag);
-    flag.onerror = () => renderWithFlag(null);
-    flag.src = `https://flagcdn.com/w160/${r.nacionalidad.code.toLowerCase()}.png`;
-  } else {
-    renderWithFlag(null);
-  }
+  // Bandera y logos de todos los equipos de la carrera, en paralelo — si
+  // alguno falla (404, CORS...) simplemente se dibuja el círculo de color
+  // de respaldo en su lugar, sin romper la generación de la tarjeta.
+  Promise.all([loadImageSafe(flagSrc), ...careerTeams.map((t) => loadImageSafe(t.logoSrc))])
+    .then(([flagEl, ...logoEls]) => {
+      careerTeams.forEach((t, i) => { t.logoImg = logoEls[i]; });
+      try {
+        drawTradingCard(ctx, canvas, info, flagEl);
+        finish(canvas.toDataURL("image/png"));
+      } catch (err) {
+        // El navegador puede "contaminar" el canvas si alguna imagen no
+        // permite CORS: en ese caso se redibuja igual, pero sin bandera ni
+        // logos (solo los círculos de color).
+        careerTeams.forEach((t) => { t.logoImg = null; });
+        drawTradingCard(ctx, canvas, info, null);
+        finish(canvas.toDataURL("image/png"));
+      }
+    });
 }
 
 $("#btn-download-card").addEventListener("click", generateAndDownloadTradingCard);
