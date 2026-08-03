@@ -34,26 +34,26 @@ function flagImg(code, className = "flag-img") {
 // más código.
 const TEAMS = {
   MotoGP: [
-    { name: "Ducati Lenovo Team", strength: 96, color: "#CC0000" },
-    { name: "Aprilia Racing", strength: 93, color: "#888888" },
-    { name: "Red Bull KTM Factory Racing", strength: 91, color: "#FF6600" },
-    { name: "Pertamina Enduro VR46 Racing Team", strength: 90, color: "#1E3F20" },
-    { name: "Gresini Racing MotoGP", strength: 89, color: "#87CEFA" },
-    { name: "Red Bull KTM Tech3", strength: 87, color: "#002D62" },
-    { name: "Trackhouse MotoGP Team", strength: 86, color: "#002B49" },
-    { name: "Monster Energy Yamaha MotoGP", strength: 85, color: "#001970" },
-    { name: "Prima Pramac Racing", strength: 84, color: "#7B1FA2" },
-    { name: "LCR Honda", strength: 84, color: "#E60012" },
-    { name: "Repsol Honda Team", strength: 83, color: "#FF6600" },
+    { name: "Ducati Lenovo Team", strength: 96, color: "#CC0000", logo: "Ducati" },
+    { name: "Aprilia Racing", strength: 93, color: "#888888", logo: "Aprilia" },
+    { name: "Red Bull KTM Factory Racing", strength: 91, color: "#FF6600", logo: "Ktm" },
+    { name: "Pertamina Enduro VR46 Racing Team", strength: 90, color: "#1E3F20", logo: "VR46" },
+    { name: "Gresini Racing MotoGP", strength: 89, color: "#87CEFA", logo: "Gresini" },
+    { name: "Red Bull KTM Tech3", strength: 87, color: "#002D62", logo: "Tech3" },
+    { name: "Trackhouse MotoGP Team", strength: 86, color: "#002B49", logo: "Trackhouse" },
+    { name: "Monster Energy Yamaha MotoGP", strength: 85, color: "#001970", logo: "Yamaha" },
+    { name: "Prima Pramac Racing", strength: 84, color: "#7B1FA2", logo: "Pramac" },
+    { name: "LCR Honda", strength: 84, color: "#E60012", logo: "Lcr" },
+    { name: "Repsol Honda Team", strength: 83, color: "#FF6600", logo: "Honda" },
   ],
   WorldSBK: [
-    { name: "Aruba.it Racing - Ducati", strength: 81, color: "#222222" },
+    { name: "Aruba.it Racing - Ducati", strength: 81, color: "#222222", logo: "Ducati" },
     { name: "ROKiT BMW Motorrad WorldSBK Team", strength: 80, color: "#0066B2" },
     { name: "Bimota by Kawasaki Racing Team", strength: 79, color: "#00A352" },
-    { name: "Pata Maxus Yamaha", strength: 78, color: "#002D62" },
+    { name: "Pata Maxus Yamaha", strength: 78, color: "#002D62", logo: "Yamaha" },
     { name: "Barni Spark Racing Team", strength: 77, color: "#FF0000" },
-    { name: "Team HRC (Honda)", strength: 76, color: "#CC0000" },
-    { name: "GYTR GRT Yamaha WorldSBK Team", strength: 75, color: "#1A237E" },
+    { name: "Team HRC (Honda)", strength: 76, color: "#CC0000", logo: "Honda" },
+    { name: "GYTR GRT Yamaha WorldSBK Team", strength: 75, color: "#1A237E", logo: "Yamaha" },
     { name: "ELF Marc VDS Racing Team (SBK)", strength: 74, color: "#004080" },
     { name: "Kawasaki WorldSBK Team", strength: 73, color: "#00A352" },
     { name: "Team Goeleven", strength: 72, color: "#555555" },
@@ -64,26 +64,26 @@ const TEAMS = {
   Moto2: [
     { name: "ELF Marc VDS Racing Team", strength: 80, color: "#004080" },
     { name: "MT Helmets – MSi", strength: 79, color: "#000000" },
-    { name: "QJMOTOR Gresini Moto2", strength: 78, color: "#D32F2F" },
+    { name: "QJMOTOR Gresini Moto2", strength: 78, color: "#D32F2F", logo: "Gresini" },
     { name: "SpeedUp Racing", strength: 77, color: "#E53935" },
     { name: "Liqui Moly Dynavolt Intact GP", strength: 76, color: "#1976D2" },
-    { name: "CFMOTO Aspar Team", strength: 75, color: "#00838F" },
+    { name: "CFMOTO Aspar Team", strength: 75, color: "#00838F", logo: "ASPAR" },
     { name: "Fantic Racing", strength: 74, color: "#E53935" },
     { name: "OnlyFans American Racing Team", strength: 73, color: "#00A3E0" },
     { name: "RW-Idrofoglia Racing GP", strength: 72, color: "#FF6F00" },
-    { name: "IDEMITSU Honda Team Asia", strength: 71, color: "#D50000" },
+    { name: "IDEMITSU Honda Team Asia", strength: 71, color: "#D50000", logo: "Honda" },
     { name: "Italtrans Racing Team", strength: 70, color: "#1565C0" },
-    { name: "BLU CRU Pramac Yamaha Moto2", strength: 69, color: "#1E88E5" },
+    { name: "BLU CRU Pramac Yamaha Moto2", strength: 69, color: "#1E88E5", logo: "Pramac" },
     { name: "KLINT Forward Factory Team", strength: 68, color: "#37474F" },
   ],
   Moto3: [
     { name: "Leopard Racing", strength: 58, color: "#00A651" },
-    { name: "Red Bull KTM Ajo", strength: 57, color: "#002D62" },
-    { name: "CFMOTO Aspar Team", strength: 56, color: "#00838F" },
+    { name: "Red Bull KTM Ajo", strength: 57, color: "#002D62", logo: "Ajo" },
+    { name: "CFMOTO Aspar Team", strength: 56, color: "#00838F", logo: "ASPAR" },
     { name: "MT Helmets – MSi", strength: 55, color: "#000000" },
     { name: "Liqui Moly Dynavolt Intact GP", strength: 54, color: "#1976D2" },
-    { name: "Red Bull KTM Tech3", strength: 53, color: "#FF6600" },
-    { name: "Honda Team Asia", strength: 53, color: "#D50000" },
+    { name: "Red Bull KTM Tech3", strength: 53, color: "#FF6600", logo: "Tech3" },
+    { name: "Honda Team Asia", strength: 53, color: "#D50000", logo: "Honda" },
     { name: "Angeluss MTA Team / LEVELUP - MTA", strength: 52, color: "#5E35B1" },
     { name: "SIC58 Squadra Corse", strength: 52, color: "#FFD700" },
     { name: "Snipers Team", strength: 51, color: "#212121" },
@@ -96,16 +96,16 @@ const TEAMS = {
   // pilotos de Moto3 que no destacan en el Mundial de motos.
   Supersport: [
     { name: "ZXMoto Factory Evan Bros Racing", strength: 68, color: "#111111" },
-    { name: "Pata Yamaha Ten Kate Racing", strength: 76, color: "#002D62" },
-    { name: "GMT94 Yamaha", strength: 73, color: "#002D62" },
+    { name: "Pata Yamaha Ten Kate Racing", strength: 76, color: "#002D62", logo: "Yamaha" },
+    { name: "GMT94 Yamaha", strength: 73, color: "#002D62", logo: "Yamaha" },
     { name: "AS bLU cRU Racing Team", strength: 71, color: "#1E88E5" },
     { name: "PTR Triumph Factory Racing", strength: 74, color: "#000000" },
     { name: "QJMOTOR Factory Racing", strength: 72, color: "#D32F2F" },
     { name: "Kawasaki WorldSSP Team", strength: 73, color: "#00A352" },
-    { name: "Honda Racing WorldSSP Team", strength: 75, color: "#CC0000" },
+    { name: "Honda Racing WorldSSP Team", strength: 75, color: "#CC0000", logo: "Honda" },
     { name: "Orelac Racing Verdnatura", strength: 69, color: "#2E7D32" },
     { name: "Feel Racing WorldSSP Team", strength: 70, color: "#D32F2F" },
-    { name: "Cerba Yamaha Racing Team", strength: 69, color: "#1976D2" },
+    { name: "Cerba Yamaha Racing Team", strength: 69, color: "#1976D2", logo: "Yamaha" },
     { name: "WRP Racing", strength: 71, color: "#003366" },
   ],
 };
@@ -137,4 +137,22 @@ function teamColor(name, championship) {
     if (found && found.color) return found.color;
   }
   return "#3B82F6"; // color por defecto si el equipo no tiene color asignado
+}
+
+// Ruta del logo del equipo (o null si ese equipo no tiene logo asignado).
+// No todos los equipos tienen un archivo en /logos, así que esto es un
+// "mejor esfuerzo": si el equipo no tiene la propiedad `logo`, se devuelve
+// null y quien llame simplemente no muestra imagen. Igual que teamColor,
+// primero busca en el campeonato indicado para desambiguar nombres
+// repetidos (p. ej. "CFMOTO Aspar Team" existe en Moto2 y en Moto3).
+function teamLogo(name, championship) {
+  if (championship && TEAMS[championship]) {
+    const found = TEAMS[championship].find((t) => t.name === name);
+    if (found && found.logo) return `logos/${found.logo}.png`;
+  }
+  for (const champ in TEAMS) {
+    const found = TEAMS[champ].find((t) => t.name === name);
+    if (found && found.logo) return `logos/${found.logo}.png`;
+  }
+  return null;
 }
