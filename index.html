@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MotoGP Career</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ PANTALLA 1: IDENTIDAD ============ -->
+  <section id="screen-identidad" class="screen active">
+    <div class="progress-bar"><div class="progress-fill" style="width:33%"></div></div>
+    <h1 class="screen-title">Identidad</h1>
+
+    <div class="bike-wrap">
+      <div class="number-plate">
+        <span id="bike-surname" class="number-plate-surname">APELLIDO</span>
+        <span id="bike-number" class="number-plate-number">00</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Apellido</label>
+      <input id="input-apellido" type="text" maxlength="16" placeholder="APELLIDO" autocomplete="off">
+    </div>
+
+    <div class="field field-small">
+      <label>Número</label>
+      <input id="input-numero" type="number" min="1" max="99" placeholder="00">
+    </div>
+
+    <div class="field">
+      <label>Mano dominante</label>
+      <div class="toggle-group" id="mano-toggle">
+        <button class="toggle-btn selected" data-value="Izquierda">Izquierda</button>
+        <button class="toggle-btn" data-value="Derecha">Derecha</button>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-dark" disabled>Volver</button>
+      <button class="btn btn-light" id="btn-to-nacionalidad">Continuar</button>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA 2: NACIONALIDAD ============ -->
+  <section id="screen-nacionalidad" class="screen">
+    <div class="progress-bar"><div class="progress-fill" style="width:66%"></div></div>
+    <h1 class="screen-title">Nacionalidad</h1>
+
+    <input id="input-search-country" type="text" class="search-input" placeholder="Buscar país...">
+
+    <div id="country-grid" class="country-grid"></div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-dark" id="btn-back-identidad">Volver</button>
+      <button class="btn btn-light" id="btn-to-debut" disabled>Continuar</button>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA 3: DEBUT (primer contrato) ============ -->
+  <section id="screen-debut" class="screen">
+    <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    <h1 class="screen-title">Tu debut</h1>
+    <p class="screen-subtitle">Tienes 16 años. Estos equipos de Moto3 quieren ficharte. Elige tu primer equipo.</p>
+
+    <div id="debut-offers" class="offer-grid"></div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-dark" id="btn-back-nacionalidad">Volver</button>
+      <div></div>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA 4: DASHBOARD DE CARRERA ============ -->
+  <section id="screen-dashboard" class="screen">
+    <div class="dashboard-header">
+      <button id="btn-reset" class="btn-reset" title="Nueva carrera">↺</button>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="col-main">
+        <div id="champion-banner" class="champion-banner">
+          <span id="champion-banner-text"></span>
+          <button id="btn-close-banner" class="banner-close">×</button>
+        </div>
+
+        <div id="streak-badge" class="streak-badge"></div>
+
+        <div class="rider-card">
+          <div class="rider-card-top">
+            <div class="rating-boxes">
+              <div class="ovr-box" id="ovr-box">
+                <span class="ovr-label">OVR</span>
+                <span id="rider-ovr" class="ovr-value">60</span>
+              </div>
+            </div>
+            <div class="rider-center">
+              <div class="rider-flagname">
+                <span id="rider-flag" class="rider-flag"></span>
+                <span id="rider-name" class="rider-name">Apellido</span>
+              </div>
+              <div id="rider-team" class="rider-team">Sin equipo</div>
+              <div class="rider-country-champ">
+                <span id="rider-country" class="rider-country">País</span>
+                <span id="rider-champ-tag" class="champ-tag">Moto3</span>
+              </div>
+            </div>
+          </div>
+          <div class="rider-stats-row">
+            <div class="stat-block">
+              <span class="side-label">Edad</span>
+              <span id="rider-age" class="side-value">16</span>
+            </div>
+            <div class="stat-block">
+              <span class="side-label">Victorias</span>
+              <span id="rider-wins" class="side-value">0</span>
+            </div>
+            <div class="stat-block">
+              <span class="side-label">Podios</span>
+              <span id="rider-podiums" class="side-value">0</span>
+            </div>
+            <div class="stat-block">
+              <span class="side-label">Títulos</span>
+              <span id="rider-titles" class="side-value">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-card">
+          <h2 class="card-title">Historial de temporadas</h2>
+          <div class="history-table" id="history-table">
+            <div class="history-row history-head">
+              <span>Edad</span><span class="col-team">Equipo</span><span>OVR</span>
+              <span>CG</span><span>POD</span><span>POL</span><span>DNF</span><span>POS</span>
+            </div>
+            <div id="history-body"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-side">
+        <div class="market-card">
+          <h2 class="card-title">Mercado de fichajes</h2>
+          <p class="market-hint">Elige equipo para disputar la temporada</p>
+          <div id="market-offers" class="offer-grid"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA 5: RETIRADA ============ -->
+  <section id="screen-retiro" class="screen">
+    <h1 class="screen-title">Retirada</h1>
+    <p class="screen-subtitle" id="retiro-subtitle">Fin de una carrera.</p>
+
+    <div class="retire-card">
+      <div class="retire-stats" id="retire-stats"></div>
+    </div>
+
+    <div class="card-actions">
+      <canvas id="trading-card-canvas" width="640" height="880" style="display:none;"></canvas>
+      <img id="trading-card-preview" class="trading-card-preview" alt="Tarjeta de piloto">
+      <button id="btn-download-card" class="btn btn-dark">📤 Exportar tarjeta</button>
+    </div>
+
+    <button id="btn-play-again" class="btn btn-light">Jugar de nuevo</button>
+  </section>
+
+</div>
+
+<!-- ============ MODAL DE CONFIRMACIÓN (dentro del juego) ============ -->
+<div id="confirm-modal" class="modal-overlay">
+  <div class="modal-box">
+    <p id="confirm-modal-text" class="modal-text"></p>
+    <div class="modal-actions">
+      <button id="confirm-modal-cancel" class="btn btn-dark">Cancelar</button>
+      <button id="confirm-modal-accept" class="btn btn-light">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
