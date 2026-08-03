@@ -160,6 +160,49 @@ body{
 .field input:focus, .search-input:focus{ border-color:var(--white); }
 .field-small input{ width:110px; text-transform:none; }
 
+.number-style-group{
+  display:flex;
+  gap:10px;
+}
+.number-font-btn{
+  flex:1;
+  padding:10px 6px;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--white);
+  font-size:20px;
+  line-height:1;
+  cursor:pointer;
+  transition:border-color 200ms ease, background 200ms ease, transform 150ms ease;
+}
+.number-font-btn:active{ transform:scale(0.95); }
+.number-font-btn.selected{
+  border-color:var(--yellow);
+  background:rgba(244,196,0,0.10);
+}
+
+.number-color-group{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+.number-color-swatch{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  border:2px solid var(--border);
+  cursor:pointer;
+  padding:0;
+  transition:transform 150ms ease, border-color 200ms ease;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset;
+}
+.number-color-swatch:active{ transform:scale(0.9); }
+.number-color-swatch.selected{
+  border-color:var(--white);
+  transform:scale(1.12);
+}
+
 .toggle-group{ display:flex; gap:10px; }
 .toggle-btn{
   flex:1;
