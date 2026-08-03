@@ -536,9 +536,21 @@ function generateMarketOffers() {
 
   let targetChamp = null;
   if (lastGood && (tenureOk || (exceptional && Math.random() < 0.25))) {
-    if (state.championship === "Moto3") targetChamp = "Moto2";
-    else if (state.championship === "Moto2") targetChamp = "MotoGP";
+    // Ninguna oferta de Moto2 puede llegar antes de los 18 años, por muy
+    // bien que vaya la temporada — ni siquiera con un ascenso meteórico.
+    if (state.championship === "Moto3") {
+      if (state.age >= 18) targetChamp = "Moto2";
+    } else if (state.championship === "Moto2") targetChamp = "MotoGP";
     else if (state.championship === "Supersport") targetChamp = "WorldSBK";
+  }
+
+  // Vía especial: piloto puntero de WorldSBK (gana carreras o está entre
+  // los 2 primeros del campeonato) puede recibir ofertas de MotoGP — pero
+  // solo hasta los 30 años. Pasada esa edad, por muy bien que le siga
+  // yendo en Superbikes, esa puerta ya no se abre.
+  if (!targetChamp && state.championship === "WorldSBK" && state.age <= 30 &&
+      lastSeason && (lastSeason.cg >= 1 || lastSeason.pos <= 2)) {
+    targetChamp = "MotoGP";
   }
 
   // Salida lateral a WorldSBK: dos vías distintas.
@@ -563,6 +575,18 @@ function generateMarketOffers() {
   let sspPick = null;
   if (state.championship === "Moto3" && !lastGood) {
     sspPick = { team: pickTeamByStrength("Supersport", 68, 73), championship: "Supersport" };
+  }
+
+  // Salto de Supersport a Moto2: la vía normal desde Supersport es subir a
+  // WorldSBK, pero si el piloto destaca MUCHO (campeón o un aluvión de
+  // victorias) existe una pequeña posibilidad de que le llegue una oferta
+  // para dar el salto al Mundial de motos en su lugar. Poco frecuente
+  // a propósito — es la excepción, no la norma — y tampoco antes de los
+  // 18 años, igual que cualquier otra oferta de Moto2.
+  let sspToMoto2Pick = null;
+  if (state.championship === "Supersport" && state.age >= 18 &&
+      lastSeason && (lastSeason.pos === 1 || lastSeason.cg >= 4) && Math.random() < 0.12) {
+    sspToMoto2Pick = { team: pickTeamByStrength("Moto2", 68, 76), championship: "Moto2" };
   }
 
   // Descenso de categoría: si llevas dos temporadas seguidas hundido en la
@@ -592,6 +616,7 @@ function generateMarketOffers() {
   }
   if (wsbkPick) picks.push(wsbkPick);
   if (sspPick) picks.push(sspPick);
+  if (sspToMoto2Pick) picks.push(sspToMoto2Pick);
   if (demotionPick) picks.push(demotionPick);
 
   // Con el retiro ya disponible, solo se añade 1 oferta extra (2 en total
