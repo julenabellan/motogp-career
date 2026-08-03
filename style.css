@@ -36,7 +36,7 @@ body{
   width:100%;
   max-width:520px;
   min-height:100vh;
-  padding:24px 18px 50px;
+  padding:24px 10px 50px;
   position:relative;
 }
 
@@ -477,7 +477,7 @@ body{
 .history-card, .market-card{
   background:var(--card);
   border-radius:var(--radius);
-  padding:20px;
+  padding:18px 10px;
   border:1px solid var(--border);
 }
 
@@ -499,12 +499,13 @@ body{
 }
 .history-row{
   display:grid;
-  grid-template-columns:0.6fr 1.7fr 0.6fr 0.6fr 0.6fr 0.6fr 0.6fr 0.7fr;
+  grid-template-columns:0.55fr 1.7fr 0.55fr 0.62fr 0.62fr 0.55fr 0.55fr 0.66fr;
   align-items:center;
-  gap:4px;
-  padding:13px 8px;
+  gap:2px;
+  padding:12px 6px;
   border-radius:10px;
   font-size:13px;
+  font-variant-numeric:tabular-nums;
 }
 .history-row > span{ text-align:center; }
 .history-row > span:first-child,
@@ -525,8 +526,18 @@ body{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:3px;
+  gap:2px;
 }
+/* Ancho fijo para el número dentro de cada stat-cell: así el icono y el
+   número no se desplazan lateralmente al pasar de una cifra a dos (p. ej.
+   de "9" a "10" carreras ganadas), porque el hueco reservado es el mismo. */
+.stat-num{
+  display:inline-block;
+  min-width:13px;
+  text-align:left;
+}
+/* Igual para la columna de posición: el número/medalla siempre ocupa el
+   mismo ancho mínimo, tenga una o dos cifras (ver .pos-badge más abajo). */
 .stat-icon{
   width:12px;
   height:12px;
@@ -658,6 +669,7 @@ body{
 .pos-gold{ background:#F4C400; color:#1a1400; }
 .pos-silver{ background:#C7CBD1; color:#1a1400; }
 .pos-bronze{ background:#CD7F32; color:#2a1300; }
+.pos-plain{ background:none; color:var(--white); }
 
 .title-mark{
   font-size:11px;
