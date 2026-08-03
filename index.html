@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MotoGP Career</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Oswald:wght@500;700&family=Orbitron:wght@700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -32,6 +32,24 @@
     <div class="field field-small">
       <label>Número</label>
       <input id="input-numero" type="number" min="1" max="99" placeholder="00">
+    </div>
+
+    <div class="field">
+      <label>Estilo del dorsal</label>
+      <div class="number-style-group" id="number-font-group">
+        <button class="number-font-btn selected" data-font="inter" style="font-family:'Inter', sans-serif;">88</button>
+        <button class="number-font-btn" data-font="oswald" style="font-family:'Oswald', sans-serif;">88</button>
+        <button class="number-font-btn" data-font="orbitron" style="font-family:'Orbitron', sans-serif;">88</button>
+        <button class="number-font-btn" data-font="bebas" style="font-family:'Bebas Neue', sans-serif;">88</button>
+      </div>
+      <div class="number-color-group" id="number-color-group">
+        <button class="number-color-swatch selected" data-color="#F4C400" style="background:#F4C400;" title="Amarillo"></button>
+        <button class="number-color-swatch" data-color="#FFFFFF" style="background:#FFFFFF;" title="Blanco"></button>
+        <button class="number-color-swatch" data-color="#E63946" style="background:#E63946;" title="Rojo"></button>
+        <button class="number-color-swatch" data-color="#3B82F6" style="background:#3B82F6;" title="Azul"></button>
+        <button class="number-color-swatch" data-color="#1DB954" style="background:#1DB954;" title="Verde"></button>
+        <button class="number-color-swatch" data-color="#E67E22" style="background:#E67E22;" title="Naranja"></button>
+      </div>
     </div>
 
     <div class="field">
