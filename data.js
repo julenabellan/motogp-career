@@ -50,7 +50,7 @@ const TEAMS = {
     { name: "ELF Marc VDS Racing Team (SBK)",         strength: 74, color: "#004080", logo: "MarcVDS"      },
     { name: "Kawasaki WorldSBK Team",                 strength: 73, color: "#00A352", logo: "Kawasaki"     },
     { name: "Team Goeleven",                          strength: 72, color: "#555555", logo: "GoEleven"     },
-    { name: "Motocorsa Racing",                       strength: 71, color: "#E53935"                       },
+    { name: "Motocorsa Racing",                       strength: 71, color: "#E53935", logo: "Motocorsa"                       },
     { name: "Motoxracing WorldSBK Team",              strength: 70, color: "#FFB300", logo: "MotoX"        },
     { name: "MGM Optical Express",                    strength: 70, color: "#333333", logo: "MGM"          },
   ],
