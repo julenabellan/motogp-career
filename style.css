@@ -271,6 +271,8 @@ body{
   width:34px;
   height:34px;
   object-fit:contain;
+  display:block;
+  align-self:center;
   margin-bottom:2px;
 }
 .offer-team-name{
