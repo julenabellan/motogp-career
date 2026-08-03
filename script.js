@@ -232,7 +232,7 @@ function pickCurve() {
 // Multiplicador del ritmo de progresión según la curva y la edad actual.
 function curveMultiplier(curve, age) {
   if (curve === "precoz") return age < 22 ? 1.35 : age < 26 ? 1.0 : 0.5;
-  if (curve === "tardio") return age < 22 ? 0.55 : age < 26 ? 0.85 : 1.3;
+  if (curve === "tardio") return age < 22 ? 0.65 : age < 26 ? 0.85 : 1.3;
   return 1.0;
 }
 
@@ -268,7 +268,7 @@ const NEGATIVE_EVENTS = [
 ];
 
 function startCareer(team) {
-  const initialOvr = randInt(52, 62);
+  const initialOvr = randInt(58, 68);
   const hiddenProfile = generateHiddenProfile();
   state = {
     rider: {
@@ -648,7 +648,13 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged) {
   // AJUSTE DE DIFICULTAD (pizca, segunda pasada): multiplicador base un
   // poco más alto todavía (antes 1.42) — conseguir cosas buenas debe notarse
   // más en el OVR, sin dejar de depender del perfil oculto y la curva.
-  const base = room * p.learningRate * curveMultiplier(p.curve, state.age) * 1.55;
+  let base = room * p.learningRate * curveMultiplier(p.curve, state.age) * 1.55;
+
+  // 1b. Impulso de novato: los primeros años en Moto3 (16-18 años) suelen
+  // ser de aprendizaje muy rápido en la vida real — se nota incluso en los
+  // pilotos de progresión más lenta. Se difumina hacia los 20.
+  if (state.age <= 18) base *= 1.35;
+  else if (state.age === 19) base *= 1.15;
 
   // 2. Edad — influye bastante menos que antes, pero a partir de los 30
   // años el declive es la norma general (con un pelín de variación
