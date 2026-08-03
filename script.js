@@ -534,8 +534,17 @@ function generateMarketOffers() {
   const tenureOk = tenure >= (state.promotionReadyAt || 2);
   const exceptional = lastSeason && (lastSeason.pos === 1 || lastSeason.pod >= 10);
 
+  // Quedar entre los 3 primeros del campeonato (o ser campeón) en Moto3,
+  // Moto2 o Supersport es motivo suficiente por sí solo para recibir SÍ O
+  // SÍ una oferta de la categoría superior, sin esperar al tiempo "mínimo"
+  // habitual en la categoría (tenureOk). Es la excepción clara a la regla
+  // general de ascenso gradual.
+  const top3Finish = lastSeason && lastSeason.pos <= 3;
+  const guaranteedPromotion = top3Finish &&
+    (state.championship === "Moto3" || state.championship === "Moto2" || state.championship === "Supersport");
+
   let targetChamp = null;
-  if (lastGood && (tenureOk || (exceptional && Math.random() < 0.25))) {
+  if (lastGood && (tenureOk || (exceptional && Math.random() < 0.25) || guaranteedPromotion)) {
     // Ninguna oferta de Moto2 puede llegar antes de los 18 años, por muy
     // bien que vaya la temporada — ni siquiera con un ascenso meteórico.
     if (state.championship === "Moto3") {
@@ -878,7 +887,21 @@ function simulateSeason(categoryChanged = false) {
   // Clasificación final del campeonato (1 a 24).
   const standings = [{ idx: -1, pts }, ...rivalPoints.map((p, idx) => ({ idx, pts: p }))];
   standings.sort((a, b) => b.pts - a.pts);
-  const champPosition = standings.findIndex((s) => s.idx === -1) + 1;
+  let champPosition = standings.findIndex((s) => s.idx === -1) + 1;
+
+  // Ganar el título en el primerísimo año dentro de una categoría (tanto si
+  // es el debut absoluto en Moto3 como el primer año tras ascender a Moto2
+  // o a MotoGP) es algo excepcional en la realidad: casi nadie llega y se
+  // corona a la primera. Si el resultado bruto de la temporada da campeón,
+  // la mayoría de las veces (85%) se "amortigua" a un resultado igualmente
+  // brillante (2º o 3º) en vez de la corona — sigue siendo una temporada de
+  // debut sobresaliente, solo que no el título. A partir del segundo año en
+  // la misma categoría la probabilidad de ser campeón queda intacta.
+  const isRookieSeason = (state.seasonsInChamp || 1) === 1;
+  if (isRookieSeason && champPosition === 1 && Math.random() < 0.85) {
+    champPosition = randInt(2, 3);
+  }
+
   const isChampion = champPosition === 1;
 
   // ---------- Crecimiento de OVR ----------
