@@ -283,6 +283,8 @@ function startCareer(team) {
     hiddenProfile,
     team: { name: team.name, strength: team.strength },
     championship: "Moto3",
+    seasonsInChamp: 0,
+    promotionReadyAt: pickPromotionThreshold(),
     history: [],
     seasonNumber: 1,
   };
@@ -440,6 +442,30 @@ function lastSeasonWasGood() {
   return last.pod >= 3 || last.cg >= 1 || last.pos <= 8;
 }
 
+// Cuántas temporadas "toca" quedarse en una categoría antes de que el
+// ascenso esté disponible, aunque el rendimiento sea bueno desde el primer
+// año. No es una regla fija: la mayoría de pilotos tarda 2-3 temporadas
+// (lo habitual en la parrilla real), pero hay una pequeña posibilidad de
+// un ascenso relámpago (1) o de asentarse más tiempo de lo normal (4).
+function pickPromotionThreshold() {
+  const r = Math.random();
+  if (r < 0.10) return 1; // ascenso meteórico, poco frecuente
+  if (r < 0.55) return 2; // lo más habitual
+  if (r < 0.90) return 3; // también muy habitual
+  return 4;                // se asienta más de lo normal
+}
+
+// Dos temporadas seguidas hundido en la tabla (18º o peor) en la misma
+// categoría, habiendo tenido ya tiempo de asentarse (2+ temporadas ahí):
+// motivo real para que el mercado te ofrezca bajar de categoría.
+function seasonsStuckBadly() {
+  const h = state.history;
+  if (h.length < 2 || (state.seasonsInChamp || 0) < 2) return false;
+  const a = h[h.length - 1], b = h[h.length - 2];
+  return a.championship === state.championship && b.championship === state.championship &&
+         a.pos >= 18 && b.pos >= 18;
+}
+
 // Elige un equipo de un campeonato dentro de un rango de nivel (strength),
 // para ofrecer un salto lateral acorde: un equipo "mediano" para un piloto
 // de Moto2 a mitad de tabla, uno más top para un buen piloto de MotoGP, o
@@ -462,9 +488,18 @@ function generateMarketOffers() {
   const lastGood = lastSeasonWasGood();
   const lastSeason = state.history[state.history.length - 1];
 
-  // Solo se desbloquea el ascenso de categoría si la última temporada fue buena.
+  // El ascenso de categoría exige, de normal, haber cumplido ya el tiempo
+  // "esperado" en la categoría actual (2-3 temporadas lo más habitual, ver
+  // pickPromotionThreshold) además de una temporada buena. Una temporada
+  // realmente excepcional (título o un aluvión de podios) puede saltarse
+  // ese tiempo mínimo, pero solo a veces — así hay sitio tanto para
+  // ascensos rápidos como para carreras que se alargan más en la categoría.
+  const tenure = state.seasonsInChamp || 1;
+  const tenureOk = tenure >= (state.promotionReadyAt || 2);
+  const exceptional = lastSeason && (lastSeason.pos === 1 || lastSeason.pod >= 10);
+
   let targetChamp = null;
-  if (lastGood) {
+  if (lastGood && (tenureOk || (exceptional && Math.random() < 0.25))) {
     if (state.championship === "Moto3") targetChamp = "Moto2";
     else if (state.championship === "Moto2") targetChamp = "MotoGP";
     else if (state.championship === "Supersport") targetChamp = "WorldSBK";
@@ -494,6 +529,19 @@ function generateMarketOffers() {
     sspPick = { team: pickTeamByStrength("Supersport", 68, 73), championship: "Supersport" };
   }
 
+  // Descenso de categoría: si llevas dos temporadas seguidas hundido en la
+  // tabla dentro de MotoGP o Moto2 (con tiempo ya de sobra para asentarte),
+  // el mercado puede ofrecerte volver a la categoría inferior para
+  // reconstruir tu carrera, en vez de seguir languideciendo arriba.
+  let demotionPick = null;
+  if (seasonsStuckBadly() && Math.random() < 0.5) {
+    if (state.championship === "MotoGP") {
+      demotionPick = { team: pickTeamByStrength("Moto2", 74, 80), championship: "Moto2" };
+    } else if (state.championship === "Moto2") {
+      demotionPick = { team: pickTeamByStrength("Moto3", 54, 58), championship: "Moto3" };
+    }
+  }
+
   const sameLevelCandidates = TEAMS[state.championship]
     .filter((t) => t.name !== state.team.name)
     .map((t) => ({ team: t, championship: state.championship }))
@@ -508,6 +556,7 @@ function generateMarketOffers() {
   }
   if (wsbkPick) picks.push(wsbkPick);
   if (sspPick) picks.push(sspPick);
+  if (demotionPick) picks.push(demotionPick);
 
   // Con el retiro ya disponible, solo se añade 1 oferta extra (2 en total
   // junto con la renovación) para que el retiro sea la tercera opción,
@@ -677,6 +726,17 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged) {
 }
 
 function simulateSeason(categoryChanged = false) {
+  // ---------- Seguimiento de permanencia en la categoría actual ----------
+  // Se usa para exigir un número mínimo de temporadas antes de poder subir
+  // de categoría (ver generateMarketOffers) — así el ascenso deja de
+  // depender solo de tener una temporada buena y se vuelve más gradual.
+  if (categoryChanged) {
+    state.seasonsInChamp = 1;
+    state.promotionReadyAt = pickPromotionThreshold();
+  } else {
+    state.seasonsInChamp = (state.seasonsInChamp || 0) + 1;
+  }
+
   const w = CATEGORY_WEIGHTS[state.championship] || CATEGORY_WEIGHTS.Moto3;
   const playerRating = state.ovr * w.rider + state.team.strength * w.team;
 
