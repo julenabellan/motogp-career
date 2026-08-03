@@ -501,11 +501,15 @@ body{
   padding:22px;
 }
 .retire-stats{
-  display:grid;
-  grid-template-columns:1fr 1fr;
+  display:flex;
+  flex-direction:row;
   gap:10px;
+  overflow-x:auto;
+  padding-bottom:2px;
 }
 .retire-stat{
+  flex:0 0 auto;
+  min-width:104px;
   background:var(--card-2);
   border-radius:12px;
   padding:14px;
@@ -532,10 +536,13 @@ body{
 }
 .retire-teams{
   display:flex;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
   gap:10px;
+  overflow-x:auto;
+  padding-bottom:2px;
 }
 .retire-team-chip{
+  flex:0 0 auto;
   display:flex;
   align-items:center;
   gap:8px;
@@ -563,7 +570,7 @@ body{
   height:14px;
   border-radius:50%;
 }
-.retire-team-name{ font-size:11.5px; font-weight:700; }
+.retire-team-name{ font-size:11.5px; font-weight:700; white-space:nowrap; }
 
 /* ---------- Retire-now option in the market ---------- */
 .offer-card.retire-option{
