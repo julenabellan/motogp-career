@@ -98,6 +98,20 @@ const TEAMS = {
     { name: "Cerba Yamaha Racing Team",               strength: 69, color: "#1976D2", logo: "Cerba"          },
     { name: "WRP Racing",                             strength: 71, color: "#003366", logo: "WRP"            },
   ],
+  // Escalón de entrada a la escalera de Superbikes, por debajo de
+  // Supersport — el equivalente, en esa escalera, a lo que Moto3 es para
+  // Moto2/MotoGP. Sin logos propios todavía: teamLogo() ya soporta que un
+  // equipo no tenga la propiedad `logo` y simplemente no muestra imagen.
+  SportBike: [
+    { name: "CM Triumph Factory Racing", strength: 54, color: "#101010" },
+    { name: "MTM Kawasaki",              strength: 53, color: "#00A352", logo: "Kawasaki"             },
+    { name: "ARCO Yamaha",               strength: 52, color: "#0033A0" },
+    { name: "Prodina Kawasaki",          strength: 51, color: "#009444" },
+    { name: "VLR Racing Suzuki",         strength: 50, color: "#003399" },
+    { name: "Revo M2 Aprilia",           strength: 49, color: "#5C6670" },
+    { name: "MMR Aprilia",               strength: 48, color: "#3B3B3B" },
+    { name: "Kove Racing Team 109",      strength: 46, color: "#FF4500", logo: "Kove"             },
+  ],
 };
 
 const POINTS_TABLE = [25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
