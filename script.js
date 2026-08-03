@@ -335,6 +335,14 @@ function renderDashboard() {
   $("#rider-champ-tag").textContent = state.championship;
   $("#rider-age").textContent = state.age;
 
+  // Dorsal, con la fuente y el color personalizados elegidos al crear el
+  // piloto (con reserva a los valores clásicos para carreras guardadas
+  // antes de tener esta opción).
+  const numberEl = $("#rider-number");
+  numberEl.textContent = "#" + (r.numero ?? "00");
+  numberEl.style.fontFamily = NUMBER_FONTS[r.numeroFont] || NUMBER_FONTS.inter;
+  numberEl.style.color = r.numeroColor || "#F4C400";
+
   // Recuento de carrera: victorias, podios y títulos conseguidos hasta la
   // última temporada disputada (sustituye al antiguo "Valor" en €).
   const career = state.history.reduce((acc, s) => {
