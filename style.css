@@ -271,12 +271,14 @@ body{
   width:34px;
   height:34px;
   object-fit:contain;
-  margin-bottom:2px;
+  margin:0 auto 2px;
+  display:block;
 }
 .offer-team-name{
   font-size:13px;
   font-weight:800;
   line-height:1.22;
+  text-align:center;
 }
 .offer-champ-badge{
   background:var(--red);
@@ -288,6 +290,9 @@ body{
   text-transform:uppercase;
   letter-spacing:0.3px;
   white-space:nowrap;
+  display:block;
+  width:fit-content;
+  margin:0 auto;
 }
 .offer-row{
   display:flex;
