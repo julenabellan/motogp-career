@@ -405,7 +405,7 @@ function renderHistory() {
     if (!s.disputed) {
       row.innerHTML = `<span><span class="ovr-badge" style="background:${teamColor(s.team, s.championship)}">${s.age}</span></span><span class="not-played">Sin disputar — ${s.team}</span>`;
     } else {
-      const posClass = s.pos === 1 ? "pos-badge pos-gold" : s.pos === 2 ? "pos-badge pos-silver" : s.pos === 3 ? "pos-badge pos-bronze" : "";
+      const posClass = s.pos === 1 ? "pos-badge pos-gold" : s.pos === 2 ? "pos-badge pos-silver" : s.pos === 3 ? "pos-badge pos-bronze" : "pos-badge pos-plain";
       const eventDot = s.event ? ` <span class="event-dot" title="${s.event}">✦</span>` : "";
       const titleMark = s.pos === 1 ? ` <span class="title-mark" title="Campeón del Mundo">🏆</span>` : "";
 
@@ -419,10 +419,10 @@ function renderHistory() {
         <span><span class="ovr-badge" style="background:${teamColor(s.team, s.championship)}">${s.age}</span></span>
         <span class="col-team">${s.team}${titleMark}${eventDot}</span>
         <span><span class="ovr-badge" style="background:${ovrColor(s.ovr)}">${s.ovr}</span></span>
-        <span class="stat-cell">${STAT_ICONS.cg}${s.cg}${cgTrend}</span>
-        <span class="stat-cell">${STAT_ICONS.pod}${s.pod}${podTrend}</span>
-        <span class="stat-cell">${STAT_ICONS.pol}${s.pol}</span>
-        <span class="stat-cell">${STAT_ICONS.dnf}${s.dnf}</span>
+        <span class="stat-cell">${STAT_ICONS.cg}<span class="stat-num">${s.cg}</span>${cgTrend}</span>
+        <span class="stat-cell">${STAT_ICONS.pod}<span class="stat-num">${s.pod}</span>${podTrend}</span>
+        <span class="stat-cell">${STAT_ICONS.pol}<span class="stat-num">${s.pol}</span></span>
+        <span class="stat-cell">${STAT_ICONS.dnf}<span class="stat-num">${s.dnf}</span></span>
         <span><span class="${posClass}">${s.pos}</span>${posTrend}</span>
       `;
     }
@@ -1122,7 +1122,7 @@ function loadImageSafe(src) {
   });
 }
 
-function generateAndDownloadTradingCard() {
+function generateTradingCard() {
   if (!state) return;
   const h = state.history;
   const totals = h.reduce((acc, s) => {
@@ -1150,18 +1150,17 @@ function generateAndDownloadTradingCard() {
   const canvas = $("#trading-card-canvas");
   const ctx = canvas.getContext("2d");
   const r = state.rider;
-  const btn = $("#btn-download-card");
-  btn.disabled = true;
+  const genBtn = $("#btn-generate-card");
+  const dlBtn = $("#btn-download-card");
+  genBtn.disabled = true;
 
   const finish = (dataUrl) => {
+    lastCardDataUrl = dataUrl;
     const preview = $("#trading-card-preview");
     preview.src = dataUrl;
     preview.style.display = "block";
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `${(r.apellido || "piloto").toLowerCase()}-motogp-card.png`;
-    a.click();
-    btn.disabled = false;
+    genBtn.disabled = false;
+    dlBtn.style.display = "inline-block";
   };
 
   const flagSrc = r.nacionalidad ? `https://flagcdn.com/w160/${r.nacionalidad.code.toLowerCase()}.png` : null;
@@ -1186,7 +1185,20 @@ function generateAndDownloadTradingCard() {
     });
 }
 
-$("#btn-download-card").addEventListener("click", generateAndDownloadTradingCard);
+// Guarda la última tarjeta generada para que el botón de descarga pueda
+// usarla sin tener que regenerarla.
+let lastCardDataUrl = null;
+
+$("#btn-generate-card").addEventListener("click", generateTradingCard);
+
+$("#btn-download-card").addEventListener("click", () => {
+  if (!lastCardDataUrl) return;
+  const r = state.rider;
+  const a = document.createElement("a");
+  a.href = lastCardDataUrl;
+  a.download = `${(r.apellido || "piloto").toLowerCase()}-motogp-card.png`;
+  a.click();
+});
 
 // Reinicio completo: limpia el estado en memoria, el localStorage y TODOS
 // los campos visuales de las pantallas 1 y 2 (antes se quedaban el toggle
@@ -1219,6 +1231,8 @@ function resetGame() {
   const preview = $("#trading-card-preview");
   preview.style.display = "none";
   preview.removeAttribute("src");
+  $("#btn-download-card").style.display = "none";
+  lastCardDataUrl = null;
 
   showScreen("screen-identidad");
 }
