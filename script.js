@@ -13,9 +13,9 @@ const MAX_AGE = 38;
 const FIELD = {
   Moto3:      { mean: 58, sd: 13 },
   Moto2:      { mean: 68, sd: 13 },
-  MotoGP:     { mean: 82, sd: 11 },
+  MotoGP:     { mean: 81, sd: 11 },
   Supersport: { mean: 64, sd: 12 },
-  WorldSBK:   { mean: 76, sd: 11 },
+  WorldSBK:   { mean: 75, sd: 11 },
 };
 const GRID_RIVALS = 23; // resto de la parrilla (24 pilotos en total en el campeonato)
 
