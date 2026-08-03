@@ -103,13 +103,13 @@ const TEAMS = {
   // Moto2/MotoGP. Sin logos propios todavía: teamLogo() ya soporta que un
   // equipo no tenga la propiedad `logo` y simplemente no muestra imagen.
   SportBike: [
-    { name: "CM Triumph Factory Racing", strength: 54, color: "#101010" },
+    { name: "CM Triumph Factory Racing", strength: 54, color: "#101010", logo: "Triumph"              },
     { name: "MTM Kawasaki",              strength: 53, color: "#00A352", logo: "Kawasaki"             },
     { name: "ARCO Yamaha",               strength: 52, color: "#0033A0" },
     { name: "Prodina Kawasaki",          strength: 51, color: "#009444" },
     { name: "VLR Racing Suzuki",         strength: 50, color: "#003399" },
     { name: "Revo M2 Aprilia",           strength: 49, color: "#5C6670" },
-    { name: "MMR Aprilia",               strength: 48, color: "#3B3B3B" },
+    { name: "MMR Aprilia",               strength: 48, color: "#3B3B3B", logo: "Aprilia"              },
     { name: "Kove Racing Team 109",      strength: 46, color: "#FF4500", logo: "Kove"             },
   ],
 };
