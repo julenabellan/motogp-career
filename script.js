@@ -22,7 +22,15 @@ const GRID_RIVALS = 23; // resto de la parrilla (24 pilotos en total en el campe
 // Ruido "casi normal" (suma de 3 uniformes) para resultados de carrera.
 function noise(sd) { return sd * ((Math.random() + Math.random() + Math.random() - 1.5) / 1.5); }
 
-let draft = { apellido: "", numero: null, mano: "Izquierda", nacionalidad: null };
+let draft = { apellido: "", numero: null, mano: "Izquierda", nacionalidad: null, numeroFont: "inter", numeroColor: "#F4C400" };
+
+// Fuentes disponibles para el dorsal (clave → familia CSS real).
+const NUMBER_FONTS = {
+  inter:    "'Inter', sans-serif",
+  oswald:   "'Oswald', sans-serif",
+  orbitron: "'Orbitron', sans-serif",
+  bebas:    "'Bebas Neue', sans-serif",
+};
 let state = null; // estado de partida en curso
 
 // ---------------- Utilidades ----------------
@@ -89,6 +97,24 @@ $("#input-numero").addEventListener("input", (e) => {
   let v = e.target.value.replace(/\D/g, "");
   if (v) v = clamp(parseInt(v), 1, 99);
   $("#bike-number").textContent = v ? String(v).padStart(2, "0") : "00";
+});
+
+$("#number-font-group").addEventListener("click", (e) => {
+  const btn = e.target.closest(".number-font-btn");
+  if (!btn) return;
+  $$("#number-font-group .number-font-btn").forEach((b) => b.classList.remove("selected"));
+  btn.classList.add("selected");
+  draft.numeroFont = btn.dataset.font;
+  $("#bike-number").style.fontFamily = NUMBER_FONTS[draft.numeroFont];
+});
+
+$("#number-color-group").addEventListener("click", (e) => {
+  const btn = e.target.closest(".number-color-swatch");
+  if (!btn) return;
+  $$("#number-color-group .number-color-swatch").forEach((b) => b.classList.remove("selected"));
+  btn.classList.add("selected");
+  draft.numeroColor = btn.dataset.color;
+  $("#bike-number").style.color = draft.numeroColor;
 });
 
 $("#mano-toggle").addEventListener("click", (e) => {
@@ -276,6 +302,8 @@ function startCareer(team) {
       numero: draft.numero,
       mano: draft.mano,
       nacionalidad: draft.nacionalidad,
+      numeroFont: draft.numeroFont,
+      numeroColor: draft.numeroColor,
     },
     age: 16,
     ovr: initialOvr,
@@ -978,9 +1006,11 @@ function drawTradingCard(ctx, canvas, info, flagImgEl) {
   ctx.font = "900 56px Inter, sans-serif";
   ctx.fillText(r.apellido || "PILOTO", W / 2, 220);
 
-  // Dorsal
-  ctx.fillStyle = "#F4C400";
-  ctx.font = "900 84px Inter, sans-serif";
+  // Dorsal (con la fuente y el color elegidos por el jugador; si la
+  // carrera se guardó antes de tener esta opción, usa los valores clásicos)
+  const numFont = NUMBER_FONTS[r.numeroFont] || NUMBER_FONTS.inter;
+  ctx.fillStyle = r.numeroColor || "#F4C400";
+  ctx.font = `900 84px ${numFont}`;
   ctx.fillText("#" + (r.numero ?? "00"), W / 2, 320);
 
   // País
@@ -1132,15 +1162,22 @@ $("#btn-download-card").addEventListener("click", generateAndDownloadTradingCard
 function resetGame() {
   localStorage.removeItem(STORAGE_KEY);
   state = null;
-  draft = { apellido: "", numero: null, mano: "Izquierda", nacionalidad: null };
+  draft = { apellido: "", numero: null, mano: "Izquierda", nacionalidad: null, numeroFont: "inter", numeroColor: "#F4C400" };
 
   $("#input-apellido").value = "";
   $("#input-numero").value = "";
   $("#bike-surname").textContent = "APELLIDO";
   $("#bike-number").textContent = "00";
+  $("#bike-number").style.fontFamily = NUMBER_FONTS.inter;
+  $("#bike-number").style.color = "#F4C400";
 
   $$("#mano-toggle .toggle-btn").forEach((b) => b.classList.remove("selected"));
   $(`#mano-toggle .toggle-btn[data-value="Izquierda"]`).classList.add("selected");
+
+  $$("#number-font-group .number-font-btn").forEach((b) => b.classList.remove("selected"));
+  $(`#number-font-group .number-font-btn[data-font="inter"]`).classList.add("selected");
+  $$("#number-color-group .number-color-swatch").forEach((b) => b.classList.remove("selected"));
+  $(`#number-color-group .number-color-swatch[data-color="#F4C400"]`).classList.add("selected");
 
   $("#input-search-country").value = "";
   buildCountryGrid();
