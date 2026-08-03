@@ -265,7 +265,7 @@ body{
   display:flex;
   flex-direction:column;
   gap:6px;
-  align-items:flex-start;
+  align-items:center;
 }
 .offer-logo{
   width:34px;
@@ -279,7 +279,10 @@ body{
   font-size:13px;
   font-weight:800;
   line-height:1.22;
+  text-align:center;
+  width:100%;
 }
+
 .offer-champ-badge{
   background:var(--red);
   color:var(--white);
@@ -290,6 +293,7 @@ body{
   text-transform:uppercase;
   letter-spacing:0.3px;
   white-space:nowrap;
+  align-self:center;
 }
 .offer-row{
   display:flex;
