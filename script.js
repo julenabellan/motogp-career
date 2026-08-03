@@ -14,6 +14,7 @@ const FIELD = {
   Moto3:      { mean: 58, sd: 13 },
   Moto2:      { mean: 68, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
+  SportBike:  { mean: 54, sd: 13 },
   Supersport: { mean: 64, sd: 12 },
   WorldSBK:   { mean: 75, sd: 11 },
 };
@@ -166,23 +167,39 @@ function buildCountryGrid(filter = "") {
 $("#input-search-country").addEventListener("input", (e) => buildCountryGrid(e.target.value));
 $("#btn-back-identidad").addEventListener("click", () => showScreen("screen-identidad"));
 
+// Probabilidad de debutar directamente en SportBike en vez de en Moto3. La
+// vía de entrada "por defecto" a la carrera sigue siendo Moto3, pero una
+// minoría de pilotos empieza en la escalera de Superbikes desde su
+// categoría de entrada — igual que en la realidad no todo el mundo debuta
+// en el Mundial de motos.
+const STARTING_CHAMP_SPORTBIKE_CHANCE = 0.15;
+function pickStartingChampionship() {
+  return Math.random() < STARTING_CHAMP_SPORTBIKE_CHANCE ? "SportBike" : "Moto3";
+}
+
 $("#btn-to-debut").addEventListener("click", () => {
+  draft.startChamp = pickStartingChampionship();
   buildDebutOffers();
   showScreen("screen-debut");
 });
 
 // ============================================================
-// PANTALLA 3: DEBUT — primeras 3 ofertas de Moto3
+// PANTALLA 3: DEBUT — primeras 3 ofertas de la categoría de entrada
+// (Moto3 lo más habitual; a veces SportBike, ver pickStartingChampionship)
 // ============================================================
 function buildDebutOffers() {
+  const champ = draft.startChamp || "Moto3";
+  $("#debut-subtitle").textContent =
+    `Tienes 16 años. Estos equipos de ${champ} quieren ficharte. Elige tu primer equipo.`;
+
   const wrap = $("#debut-offers");
   wrap.innerHTML = "";
-  const pool = [...TEAMS.Moto3].sort(() => Math.random() - 0.5).slice(0, 3);
+  const pool = [...TEAMS[champ]].sort(() => Math.random() - 0.5).slice(0, 3);
   pool.forEach((team) => {
     const card = document.createElement("div");
     card.className = "offer-card";
-    card.innerHTML = offerCardHTML(team, "Moto3");
-    card.addEventListener("click", () => startCareer(team));
+    card.innerHTML = offerCardHTML(team, champ);
+    card.addEventListener("click", () => startCareer(team, champ));
     wrap.appendChild(card);
   });
 }
@@ -293,7 +310,7 @@ const NEGATIVE_EVENTS = [
   { text: "Problemas de confianza",  bonus: () => rand(-2.6, -0.8) },
 ];
 
-function startCareer(team) {
+function startCareer(team, champ = "Moto3") {
   const initialOvr = randInt(58, 68);
   const hiddenProfile = generateHiddenProfile();
   state = {
@@ -310,7 +327,7 @@ function startCareer(team) {
     potential: hiddenProfile.potential,
     hiddenProfile,
     team: { name: team.name, strength: team.strength },
-    championship: "Moto3",
+    championship: champ,
     seasonsInChamp: 0,
     promotionReadyAt: pickPromotionThreshold(),
     history: [],
@@ -541,7 +558,8 @@ function generateMarketOffers() {
   // general de ascenso gradual.
   const top3Finish = lastSeason && lastSeason.pos <= 3;
   const guaranteedPromotion = top3Finish &&
-    (state.championship === "Moto3" || state.championship === "Moto2" || state.championship === "Supersport");
+    (state.championship === "Moto3" || state.championship === "Moto2" ||
+     state.championship === "Supersport" || state.championship === "SportBike");
 
   let targetChamp = null;
   if (lastGood && (tenureOk || (exceptional && Math.random() < 0.25) || guaranteedPromotion)) {
@@ -551,6 +569,7 @@ function generateMarketOffers() {
       if (state.age >= 18) targetChamp = "Moto2";
     } else if (state.championship === "Moto2") targetChamp = "MotoGP";
     else if (state.championship === "Supersport") targetChamp = "WorldSBK";
+    else if (state.championship === "SportBike") targetChamp = "Supersport";
   }
 
   // Vía especial: piloto puntero de WorldSBK (gana carreras o está entre
@@ -598,6 +617,18 @@ function generateMarketOffers() {
     sspToMoto2Pick = { team: pickTeamByStrength("Moto2", 68, 76), championship: "Moto2" };
   }
 
+  // Salto de SportBike a Moto3: la vía normal desde SportBike es subir a
+  // Supersport, pero si el piloto destaca MUCHO (campeón o un aluvión de
+  // victorias) existe una pequeña posibilidad de que un equipo de Moto3 se
+  // fije en él y le ofrezca dar el salto directo al Mundial de motos, sin
+  // pasar por Supersport. Poco frecuente a propósito — es la excepción, no
+  // la norma — igual que el salto equivalente de Supersport a Moto2.
+  let spbToMoto3Pick = null;
+  if (state.championship === "SportBike" &&
+      lastSeason && (lastSeason.pos === 1 || lastSeason.cg >= 4) && Math.random() < 0.12) {
+    spbToMoto3Pick = { team: pickTeamByStrength("Moto3", 50, 55), championship: "Moto3" };
+  }
+
   // Descenso de categoría: si llevas dos temporadas seguidas hundido en la
   // tabla dentro de MotoGP o Moto2 (con tiempo ya de sobra para asentarte),
   // el mercado puede ofrecerte volver a la categoría inferior para
@@ -608,6 +639,8 @@ function generateMarketOffers() {
       demotionPick = { team: pickTeamByStrength("Moto2", 74, 80), championship: "Moto2" };
     } else if (state.championship === "Moto2") {
       demotionPick = { team: pickTeamByStrength("Moto3", 54, 58), championship: "Moto3" };
+    } else if (state.championship === "Supersport") {
+      demotionPick = { team: pickTeamByStrength("SportBike", 46, 54), championship: "SportBike" };
     }
   }
 
@@ -626,6 +659,7 @@ function generateMarketOffers() {
   if (wsbkPick) picks.push(wsbkPick);
   if (sspPick) picks.push(sspPick);
   if (sspToMoto2Pick) picks.push(sspToMoto2Pick);
+  if (spbToMoto3Pick) picks.push(spbToMoto3Pick);
   if (demotionPick) picks.push(demotionPick);
 
   // Con el retiro ya disponible, solo se añade 1 oferta extra (2 en total
@@ -696,6 +730,7 @@ const CATEGORY_WEIGHTS = {
   Moto3:      { rider: 0.83, team: 0.17 },
   Moto2:      { rider: 0.82, team: 0.18 },
   MotoGP:     { rider: 0.65, team: 0.35 },
+  SportBike:  { rider: 0.84, team: 0.16 },
   Supersport: { rider: 0.79, team: 0.21 },
   WorldSBK:   { rider: 0.72, team: 0.28 },
 };
