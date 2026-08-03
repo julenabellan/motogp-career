@@ -1,4 +1,4 @@
-:root{
+:root{ 
   --bg:#0D0D0D;
   --card:#181818;
   --card-2:#1F1F1F;
@@ -265,20 +265,18 @@ body{
   display:flex;
   flex-direction:column;
   gap:6px;
-  align-items:center;
-  text-align:center;
+  align-items:flex-start;
 }
 .offer-logo{
   width:34px;
   height:34px;
   object-fit:contain;
   margin-bottom:2px;
+}
 .offer-team-name{
   font-size:13px;
   font-weight:800;
   line-height:1.22;
-  text-align:center;
-  width:100%;
 }
 .offer-champ-badge{
   background:var(--red);
@@ -296,8 +294,6 @@ body{
   flex-direction:column;
   gap:1px;
   font-size:11px;
-  align-items:center;
-  text-align:center;
 }
 .offer-row .label{ color:var(--gray); font-weight:600; font-size:9.5px; text-transform:uppercase; letter-spacing:0.3px; }
 .offer-row .value{ font-weight:700; }
