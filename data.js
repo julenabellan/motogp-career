@@ -43,7 +43,7 @@ const TEAMS = {
     { name: "Aruba.it Racing - Ducati",               strength: 81, color: "#CC0000", logo: "Aruba"        },
     { name: "ROKiT BMW Motorrad WorldSBK Team",       strength: 80, color: "#0066B2", logo: "BMW"          },
     { name: "Bimota by Kawasaki Racing Team",         strength: 79, color: "#00A352", logo: "Bimota"       },
-    { name: "Pata Maxus Yamaha",                      strength: 78, color: "#002D62", logo: "PatoYamaha"   },
+    { name: "Pata Maxus Yamaha",                      strength: 78, color: "#002D62", logo: "PataYamaha"   },
     { name: "Barni Spark Racing Team",                strength: 77, color: "#FF0000", logo: "Barni"        },
     { name: "Team HRC (Honda)",                       strength: 76, color: "#CC0000", logo: "HRC"          },
     { name: "GYTR GRT Yamaha WorldSBK Team",          strength: 75, color: "#1A237E", logo: "GYTR"         },
