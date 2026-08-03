@@ -427,6 +427,14 @@ body{
 .ovr-value{ font-size:21px; font-weight:900; line-height:1; text-shadow:0 1px 3px rgba(0,0,0,0.4); }
 
 .rider-center{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.rider-number{
+  flex-shrink:0;
+  font-size:26px;
+  font-weight:900;
+  line-height:1;
+  color:var(--yellow);
+  font-family:'Inter', sans-serif;
+}
 .rider-flagname{ display:flex; align-items:center; gap:8px; }
 .rider-flag{ font-size:16px; }
 .rider-name{ font-size:17px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -479,6 +487,7 @@ body{
   .rider-name{ font-size:21px; }
   .ovr-box{ width:74px; height:74px; }
   .ovr-value{ font-size:28px; }
+  .rider-number{ font-size:32px; }
 }
 
 .history-table{
