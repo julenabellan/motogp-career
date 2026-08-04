@@ -15,6 +15,11 @@ const MAX_AGE_NATIONAL = 41;
 // del pelotón — por eso el mismo OVR rinde mucho menos en una categoría
 // superior y hace falta subir de verdad para seguir ganando.
 const FIELD = {
+  // Fase de formación (16-17 años, antes de Moto3/SportBike): pelotón más
+  // flojo y todavía muy irregular — es la primera parrilla profesional.
+  MotoJunior:      { mean: 45, sd: 14 },
+  RedBullRookies:  { mean: 47, sd: 14 },
+  YamahaR3Cup:     { mean: 40, sd: 14 },
   Moto3:      { mean: 58, sd: 13 },
   Moto2:      { mean: 68, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
@@ -29,6 +34,11 @@ const FIELD = {
   CIV:        { mean: 59, sd: 12 },
 };
 const GRID_RIVALS = 23; // resto de la parrilla (24 pilotos en total en el campeonato)
+
+// Campeonatos de la fase de formación (16-17 años, antes de Moto3 y
+// SportBike). Se usa tanto para el mercado de fichajes como para el
+// empujón de OVR al graduarse (ver computeSeasonGrowth).
+const JUNIOR_CHAMPS = ["MotoJunior", "RedBullRookies", "YamahaR3Cup"];
 
 // Ruido "casi normal" (suma de 3 uniformes) para resultados de carrera.
 function noise(sd) { return sd * ((Math.random() + Math.random() + Math.random() - 1.5) / 1.5); }
@@ -212,29 +222,51 @@ $("#btn-to-debut").addEventListener("click", () => {
 });
 
 // ============================================================
-// PANTALLA 3: DEBUT — primeras 3 ofertas, mezclando Moto3 y SportBike
-// Cada una de las 3 ofertas se sortea POR SEPARADO entre las dos
-// categorías (no las 3 de golpe), para que en la pantalla salgan
-// mezcladas en vez de "las 3 de Moto3" o "las 3 de SportBike". A la
-// larga, sobre muchas partidas, ronda el 70-75% Moto3 / 25-30% SportBike.
+// PANTALLA 3: DEBUT — primeras 3 ofertas, de la FASE DE FORMACIÓN júnior
+// (nunca directamente de Moto3 ni SportBike). Cada una de las 3 ofertas se
+// sortea POR SEPARADO entre los tres campeonatos júnior (no las 3 de
+// golpe), para que en la pantalla salgan mezcladas. A la larga, sobre
+// muchas partidas, ronda el 73% vía Moto3 (FIM JuniorGP + Red Bull
+// Rookies Cup) / 27% vía SportBike (Yamaha R3 Cup) — la misma proporción
+// que antes tenían Moto3/SportBike directamente, ahora aplicada al primer
+// escalón de la escalera.
 // ============================================================
-const DEBUT_MOTO3_CHANCE = 0.73;
+const JUNIOR_DEBUT_CHAMPS = [
+  { key: "MotoJunior",     weight: 0.47 }, // rumbo Moto3
+  { key: "RedBullRookies", weight: 0.26 }, // rumbo Moto3
+  { key: "YamahaR3Cup",    weight: 0.27 }, // rumbo SportBike
+];
 
 function buildDebutOffers() {
   $("#debut-subtitle").textContent =
-    "Tienes 16 años. Estos equipos quieren ficharte. Elige tu primer equipo.";
+    "Tienes 16 años. Estos son los campeonatos júnior que quieren ficharte. Elige tu primer equipo.";
 
   const wrap = $("#debut-offers");
   wrap.innerHTML = "";
 
-  const moto3Pool = [...TEAMS.Moto3].sort(() => Math.random() - 0.5);
-  const spbPool = [...TEAMS.SportBike].sort(() => Math.random() - 0.5);
+  // Red Bull Rookies Cup y Yamaha R3 Cup son monomarca (un único equipo);
+  // FIM JuniorGP tiene varios.
+  const pools = {
+    MotoJunior: [...TEAMS.MotoJunior].sort(() => Math.random() - 0.5),
+    RedBullRookies: [...TEAMS.RedBullRookies],
+    YamahaR3Cup: [...TEAMS.YamahaR3Cup],
+  };
 
   for (let i = 0; i < 3; i++) {
-    const champ = Math.random() < DEBUT_MOTO3_CHANCE ? "Moto3" : "SportBike";
-    const pool = champ === "Moto3" ? moto3Pool : spbPool;
-    const team = pool.shift();
-    if (!team) continue; // red de seguridad, no debería vaciarse con solo 3 ofertas
+    // Solo se sortea entre los campeonatos cuya pool todavía tenga algún
+    // equipo libre — así los dos monomarca no pueden ofrecerse dos veces.
+    const available = JUNIOR_DEBUT_CHAMPS.filter((c) => pools[c.key].length);
+    if (!available.length) break;
+    const totalWeight = available.reduce((sum, c) => sum + c.weight, 0);
+    let r = Math.random() * totalWeight;
+    let champ = available[available.length - 1].key;
+    for (const c of available) {
+      if (r < c.weight) { champ = c.key; break; }
+      r -= c.weight;
+    }
+
+    const team = pools[champ].shift();
+    if (!team) continue; // red de seguridad
 
     const card = document.createElement("div");
     card.className = "offer-card";
@@ -253,7 +285,7 @@ function offerCardHTML(team, champ) {
     <div class="offer-top">
       ${logoHTML}
       <span class="offer-team-name">${team.name}</span>
-      <span class="offer-champ-badge">${champ}</span>
+      <span class="offer-champ-badge">${champLabel(champ)}</span>
     </div>
   `;
 }
@@ -350,8 +382,15 @@ const NEGATIVE_EVENTS = [
   { text: "Problemas de confianza",  bonus: () => rand(-2.6, -0.8) },
 ];
 
-function startCareer(team, champ = "Moto3") {
-  const initialOvr = randInt(58, 68);
+function startCareer(team, champ = "MotoJunior") {
+  // AJUSTE FASE DE FORMACIÓN: el piloto arranca con un OVR bastante más
+  // bajo que antes (antes se debutaba ya en Moto3/SportBike con 58-68).
+  // La fase júnior está pensada para que, en 1-2 temporadas, el ritmo de
+  // crecimiento normal (ver computeSeasonGrowth, con el impulso extra de
+  // "room" al estar tan lejos del potencial y el bonus de 16-18 años) lo
+  // devuelva a un nivel similar al que antes tenía al debutar directamente
+  // en Moto3 — es una fase de desarrollo, no un retraso de la progresión.
+  const initialOvr = randInt(38, 48);
   const hiddenProfile = generateHiddenProfile();
   state = {
     rider: {
@@ -389,7 +428,7 @@ function renderDashboard(justSimulated = false) {
   $("#rider-name").textContent = r.apellido;
   $("#rider-team").textContent = state.team.name;
   $("#rider-country").textContent = r.nacionalidad.name;
-  $("#rider-champ-tag").textContent = state.championship;
+  $("#rider-champ-tag").textContent = champLabel(state.championship);
   $("#rider-age").textContent = state.age;
 
   // Dorsal, con la fuente y el color personalizados elegidos al crear el
@@ -533,9 +572,10 @@ function renderMarket() {
 
       setTimeout(() => {
         const categoryChanged = o.championship !== state.championship || o.team.name !== state.team.name;
+        const previousChampionship = state.championship;
         state.team = { name: o.team.name, strength: o.team.strength };
         state.championship = o.championship;
-        simulateSeason(categoryChanged);
+        simulateSeason(categoryChanged, previousChampionship);
       }, 900);
     });
     card.addEventListener("animationend", () => card.classList.remove("card-enter"), { once: true });
@@ -579,6 +619,13 @@ function lastSeasonWasGood() {
 // raro, no solo "poco frecuente".
 function pickPromotionThreshold(fromChamp) {
   const r = Math.random();
+  // Fase de formación: el ascenso a Moto3/SportBike debe llegar rápido —
+  // 1 temporada es lo más habitual, 2 como mucho. Nunca debe convertirse
+  // en un tercer o cuarto año estancado en la categoría júnior.
+  if (fromChamp === "MotoJunior" || fromChamp === "RedBullRookies" || fromChamp === "YamahaR3Cup") {
+    if (r < 0.45) return 1;
+    return 2;
+  }
   if (fromChamp === "Moto3") {
     if (r < 0.04) return 1;  // ascenso relámpago, muy raro
     if (r < 0.22) return 2;
@@ -720,14 +767,22 @@ function generateMarketOffers() {
   // general de ascenso gradual.
   const top3Finish = lastSeason && lastSeason.pos <= 3;
   const guaranteedPromotion = top3Finish &&
-    (state.championship === "Moto3" || state.championship === "Moto2" ||
+    (state.championship === "MotoJunior" || state.championship === "RedBullRookies" ||
+     state.championship === "YamahaR3Cup" ||
+     state.championship === "Moto3" || state.championship === "Moto2" ||
      state.championship === "Supersport" || state.championship === "SportBike");
 
   let targetChamp = null;
   if (lastGood && (tenureOk || (exceptional && Math.random() < 0.25) || guaranteedPromotion)) {
+    // Fase de formación: FIM JuniorGP y Red Bull Rookies Cup desembocan en
+    // Moto3; Yamaha R3 Cup desemboca en SportBike.
+    if (state.championship === "MotoJunior" || state.championship === "RedBullRookies") {
+      targetChamp = "Moto3";
+    } else if (state.championship === "YamahaR3Cup") {
+      targetChamp = "SportBike";
     // Ninguna oferta de Moto2 puede llegar antes de los 18 años, por muy
     // bien que vaya la temporada — ni siquiera con un ascenso meteórico.
-    if (state.championship === "Moto3") {
+    } else if (state.championship === "Moto3") {
       if (state.age >= 18) targetChamp = "Moto2";
     } else if (state.championship === "Moto2") targetChamp = "MotoGP";
     else if (state.championship === "Supersport") targetChamp = "WorldSBK";
@@ -884,6 +939,19 @@ function generateMarketOffers() {
     .map((t) => ({ team: t, championship: state.championship }))
     .sort(() => Math.random() - 0.5);
 
+  // Red Bull Rookies Cup y Yamaha R3 Cup son monomarca: no existe otro
+  // equipo dentro de la misma categoría al que cambiarse. Si ese año no
+  // hay ascenso ni ninguna otra vía especial, se ofrece como alternativa
+  // un equipo de FIM JuniorGP (que sí tiene varios) en vez de dejar el
+  // mercado con menos tarjetas de las esperadas.
+  if (!sameLevelCandidates.length &&
+      (state.championship === "RedBullRookies" || state.championship === "YamahaR3Cup")) {
+    sameLevelCandidates.push(
+      ...TEAMS.MotoJunior.map((t) => ({ team: t, championship: "MotoJunior" }))
+        .sort(() => Math.random() - 0.5)
+    );
+  }
+
   const picks = [];
   // El paso atrás garantizado (repeatedNonRenewalPick) va primero: así
   // sobrevive siempre al recorte de abajo, aunque coincida con otras
@@ -981,6 +1049,12 @@ function getRivalField(champ) {
 // En Moto3/Moto2 el talento del piloto lo es casi todo; en MotoGP la moto
 // pesa más, pero el piloto sigue siendo el factor principal.
 const CATEGORY_WEIGHTS = {
+  // Monomarca (Red Bull Rookies / Yamaha R3 Cup): toda la parrilla corre
+  // con la misma moto, así que el peso del equipo debe ser casi nulo — lo
+  // que decide es casi exclusivamente el piloto.
+  MotoJunior:      { rider: 0.86, team: 0.14 },
+  RedBullRookies:  { rider: 0.97, team: 0.03 },
+  YamahaR3Cup:     { rider: 0.97, team: 0.03 },
   Moto3:      { rider: 0.83, team: 0.17 },
   Moto2:      { rider: 0.82, team: 0.18 },
   MotoGP:     { rider: 0.65, team: 0.35 },
@@ -998,7 +1072,7 @@ const CATEGORY_WEIGHTS = {
 // Nada de esto es una fórmula fija: dos pilotos con los mismos resultados
 // pueden acabar la temporada con crecimientos muy distintos.
 // ------------------------------------------------------------
-function computeSeasonGrowth(pts, champPosition, categoryChanged) {
+function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampionship = null) {
   const p = state.hiddenProfile;
   const maxPossiblePts = RACES_PER_SEASON * 25;
   const perfRatio = pts / maxPossiblePts;
@@ -1104,10 +1178,26 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged) {
     rounded += 2;
   }
 
+  // 8. Graduación de la fase de formación: el crecimiento anual normal (de
+  // pocos puntos por temporada) es demasiado lento para que, en solo 1-2
+  // temporadas, un piloto que empezó con 38-48 de OVR llegue a Moto3 o
+  // SportBike a un nivel parecido al que antes tenía un debut directo ahí
+  // (58-68). Por eso, al dar ese salto concreto, se añade el empujón extra
+  // que faltaba para dejarlo en ese rango — con variación según su
+  // potencial oculto, para que la fase júnior siga notándose (los pilotos
+  // con más techo llegan más arriba del rango, no todos igual).
+  if (categoryChanged && JUNIOR_CHAMPS.includes(previousChampionship) &&
+      (state.championship === "Moto3" || state.championship === "SportBike")) {
+    const targetOvr = clamp(randInt(56, 69) + Math.round((p.potential - 85) / 8), 50, 74);
+    const projectedOvr = state.ovr + rounded;
+    const jump = clamp(targetOvr - projectedOvr, 0, 26);
+    rounded += Math.round(jump);
+  }
+
   return { growth: rounded, eventText };
 }
 
-function simulateSeason(categoryChanged = false) {
+function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // ---------- Seguimiento de permanencia en la categoría actual ----------
   // Se usa para exigir un número mínimo de temporadas antes de poder subir
   // de categoría (ver generateMarketOffers) — así el ascenso deja de
@@ -1121,12 +1211,11 @@ function simulateSeason(categoryChanged = false) {
 
   const w = CATEGORY_WEIGHTS[state.championship] || CATEGORY_WEIGHTS.Moto3;
 
-  // AJUSTE DE DIFICULTAD: la temporada de debut absoluto en Moto3 (16 años,
-  // sin ninguna temporada previa en la carrera) es un pelín más dura que el
-  // resto — el "shock" real de subirse por primera vez a una moto de
-  // Gran Premio. No afecta a un regreso posterior a Moto3 tras un descenso,
-  // ni al debut en SportBike.
-  const isCareerDebut = state.history.length === 0 && state.championship === "Moto3";
+  // AJUSTE DE DIFICULTAD: la primerísima temporada de la carrera (16 años,
+  // en la fase de formación) es un pelín más dura que el resto — el
+  // "shock" real de subirse por primera vez a una moto de competición. No
+  // afecta a temporadas posteriores, aunque impliquen cambio de categoría.
+  const isCareerDebut = state.history.length === 0;
   const playerRating = state.ovr * w.rider + state.team.strength * w.team - (isCareerDebut ? 1 : 0);
 
   // Nivel base de cada rival para toda la temporada (su sitio dentro del
@@ -1231,7 +1320,7 @@ function simulateSeason(categoryChanged = false) {
   // ---------- Crecimiento de OVR ----------
   // Combina perfil oculto, edad, resultados deportivos, adaptación y
   // eventos aleatorios — nunca una fórmula fija. Ver computeSeasonGrowth().
-  const { growth, eventText } = computeSeasonGrowth(pts, champPosition, categoryChanged);
+  const { growth, eventText } = computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampionship);
 
   // Guardar en historial (incluye el evento de la temporada, si lo hubo)
   state.history.push({
@@ -1320,7 +1409,7 @@ function renderCareerTeamsList(containerSelector) {
       : "";
     return `
       <div class="retiro-team-card" style="background:${cardBg};">
-        <span class="retiro-team-badge">${t.championship}</span>
+        <span class="retiro-team-badge">${champLabel(t.championship)}</span>
         <div class="retiro-team-visual">
           ${logoHTML}
           <div class="retiro-team-fallback" style="background:${color}; display:${logo ? "none" : "flex"};">${initial}</div>
@@ -1354,10 +1443,14 @@ function retireCareer() {
   h.forEach((s) => {
     if (s.pos === 1) titlesByChamp[s.championship] = (titlesByChamp[s.championship] || 0) + 1;
   });
-  const CHAMP_ORDER = ["SportBike", "Moto3", "Supersport", "Moto2", "ESBK", "BSB", "CIV", "WorldSBK", "MotoGP"];
+  const CHAMP_ORDER = [
+    "MotoJunior", "RedBullRookies", "YamahaR3Cup",
+    "SportBike", "Moto3", "Supersport", "Moto2",
+    "ESBK", "BSB", "CIV", "WorldSBK", "MotoGP",
+  ];
   const titlesBreakdown = CHAMP_ORDER
     .filter((c) => titlesByChamp[c])
-    .map((c) => `${c}: ${titlesByChamp[c]}`)
+    .map((c) => `${champLabel(c)}: ${titlesByChamp[c]}`)
     .join("   ");
 
   // Mejor posición de campeonato conseguida, y en qué temporada.
@@ -1385,7 +1478,7 @@ function retireCareer() {
   numberEl.style.fontFamily = NUMBER_FONTS[r.numeroFont] || NUMBER_FONTS.inter;
   numberEl.style.color = r.numeroColor || "#F4C400";
   $("#retiro-subtitle").textContent =
-    `${seasons} temporada${seasons === 1 ? "" : "s"} como profesional, compitiendo en ${lastChamp}.`;
+    `${seasons} temporada${seasons === 1 ? "" : "s"} como profesional, compitiendo en ${champLabel(lastChamp)}.`;
 
   // ---------- Grid de 6 estadísticas ----------
   $("#retire-stats").innerHTML = `
