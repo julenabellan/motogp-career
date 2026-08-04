@@ -48,6 +48,18 @@ function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 
+// Convierte un color hex ("#RRGGBB" o "#RGB") a "rgba(r, g, b, alpha)" —
+// se usa para pintar el degradado de color de equipo en las tarjetas de la
+// pantalla de retirada, con baja opacidad.
+function hexToRgba(hex, alpha) {
+  const h = (hex || "#3B82F6").replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(full.slice(0, 2), 16) || 0;
+  const g = parseInt(full.slice(2, 4), 16) || 0;
+  const b = parseInt(full.slice(4, 6), 16) || 0;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // ---------------- Confirmación dentro del juego ----------------
 // Sustituye a window.confirm(): un modal propio, con el mismo estilo que
 // el resto de la app, en vez del cuadro de diálogo nativo del navegador.
@@ -1091,11 +1103,12 @@ function renderCareerTeamsList(containerSelector) {
     const logo = teamLogo(t.name, t.championship);
     const color = teamColor(t.name, t.championship);
     const initial = t.name.trim().charAt(0).toUpperCase();
+    const cardBg = `linear-gradient(160deg, ${hexToRgba(color, 0.32)}, var(--card) 68%)`;
     const logoHTML = logo
       ? `<img class="retiro-team-logo" src="${logo}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">`
       : "";
     return `
-      <div class="retiro-team-card">
+      <div class="retiro-team-card" style="background:${cardBg};">
         <span class="retiro-team-badge">${t.championship}</span>
         <div class="retiro-team-visual">
           ${logoHTML}
@@ -1148,18 +1161,16 @@ function retireCareer() {
     if (s.ovr > peakOvr) { peakOvr = s.ovr; peakOvrSeason = idx + 1; }
   });
 
-  const lastAge = seasons ? h[seasons - 1].age : state.age;
   const lastChamp = seasons ? h[seasons - 1].championship : state.championship;
   const avg = (total) => (seasons ? (total / seasons).toFixed(1) : "0.0");
 
-  // ---------- Cabecera: temporadas / edad / OVR final ----------
-  $("#retiro-mini-seasons").textContent = seasons;
-  $("#retiro-mini-age").textContent = lastAge;
-  $("#retiro-mini-ovr").textContent = state.ovr;
-  $("#retiro-ovr-box").style.background = ovrColor(state.ovr);
-
-  // ---------- Hero: nombre y subtítulo ----------
-  $("#retiro-rider-name").textContent = state.rider.apellido || "PILOTO";
+  // ---------- Hero: nombre, dorsal y subtítulo ----------
+  const r = state.rider;
+  $("#retiro-rider-name").textContent = r.apellido || "PILOTO";
+  const numberEl = $("#retiro-rider-number");
+  numberEl.textContent = "#" + (r.numero ?? "00");
+  numberEl.style.fontFamily = NUMBER_FONTS[r.numeroFont] || NUMBER_FONTS.inter;
+  numberEl.style.color = r.numeroColor || "#F4C400";
   $("#retiro-subtitle").textContent =
     `${seasons} temporada${seasons === 1 ? "" : "s"} como profesional, compitiendo en ${lastChamp}.`;
 
