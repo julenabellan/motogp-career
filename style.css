@@ -521,6 +521,17 @@ body{
   font-variant-numeric:tabular-nums;
 }
 .history-row > span{ text-align:center; }
+
+/* Entrada suave de la temporada recién disputada: en vez de aparecer de
+   golpe, la fila se desvanece hacia dentro en ~0.5s. */
+.history-row.row-enter{
+  opacity:0;
+  animation:historyRowFadeIn 500ms ease forwards;
+}
+@keyframes historyRowFadeIn{
+  from{ opacity:0; transform:translateY(6px); }
+  to{ opacity:1; transform:translateY(0); }
+}
 .history-row > span:first-child,
 .history-row > span.col-team{ text-align:left; }
 .history-head{
