@@ -11,7 +11,7 @@ const MAX_AGE = 38;
 // del pelotón — por eso el mismo OVR rinde mucho menos en una categoría
 // superior y hace falta subir de verdad para seguir ganando.
 const FIELD = {
-  Moto3:      { mean: 59, sd: 13 },
+  Moto3:      { mean: 58, sd: 13 },
   Moto2:      { mean: 68, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
   SportBike:  { mean: 54, sd: 13 },
