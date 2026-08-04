@@ -562,28 +562,6 @@ body{
    PANTALLA DE RETIRADA — rediseño al estilo "resumen de carrera"
    ============================================================ */
 
-/* Cabecera: mini-stats a la derecha (temporadas, edad, OVR final) */
-.retiro-header{
-  display:flex;
-  justify-content:flex-end;
-  align-items:center;
-  gap:22px;
-}
-.retiro-mini-stat{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:2px;
-}
-.retiro-mini-stat .mini-label{
-  font-size:10px;
-  font-weight:700;
-  color:var(--gray);
-  text-transform:uppercase;
-  letter-spacing:0.4px;
-}
-.retiro-mini-stat .mini-value{ font-size:18px; font-weight:800; }
-
 /* Hero: bandera + "Carrera finalizada" + nombre + subtítulo */
 .retiro-hero{
   background:var(--card);
@@ -607,11 +585,24 @@ body{
   text-transform:uppercase;
   letter-spacing:0.6px;
 }
+.retiro-hero-namerow{
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  flex-wrap:wrap;
+}
 .retiro-rider-name{
   font-size:34px;
   font-weight:900;
   letter-spacing:-0.5px;
   margin:2px 0 2px;
+}
+.retiro-rider-number{
+  font-size:26px;
+  font-weight:900;
+  line-height:1;
+  color:var(--yellow);
+  font-family:'Inter', sans-serif;
 }
 .retiro-hero .screen-subtitle{ margin-top:0; }
 
@@ -669,7 +660,6 @@ body{
 }
 .retiro-team-card{
   position:relative;
-  background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--radius);
   padding:16px 12px 14px;
@@ -677,6 +667,7 @@ body{
   flex-direction:column;
   align-items:center;
   gap:10px;
+  overflow:hidden;
 }
 .retiro-team-badge{
   position:absolute;
