@@ -556,6 +556,7 @@ body{
 .not-played{ color:var(--gray-dim); font-style:italic; grid-column:2 / -1; }
 
 .market-hint{ font-size:12.5px; color:var(--gray); margin-bottom:12px; font-weight:600; }
+.market-hint-warning{ color:var(--red); }
 
 /* ---------- Retirement screen ---------- */
 .retire-card{
