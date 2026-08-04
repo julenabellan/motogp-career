@@ -308,7 +308,7 @@ body{
   display:flex;
   flex-direction:column;
   gap:6px;
-  align-items:flex-start;
+  align-items:center;
 }
 .offer-logo{
   width:34px;
@@ -318,6 +318,7 @@ body{
   display:block;
 }
 .offer-team-name{
+  width:100%;
   font-size:13px;
   font-weight:800;
   line-height:1.22;
