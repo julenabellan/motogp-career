@@ -23,7 +23,9 @@ const FIELD = {
   MotoJunior:      { mean: 43, sd: 14 },
   RedBullRookies:  { mean: 45, sd: 14 },
   YamahaR3Cup:     { mean: 38, sd: 14 },
-  Moto3:      { mean: 58, sd: 13 },
+  // AJUSTE (4ª pasada): un pelín menos exigente en general, no solo el
+  // año de estreno — de 58 a 57.
+  Moto3:      { mean: 57, sd: 13 },
   Moto2:      { mean: 68, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
   SportBike:  { mean: 54, sd: 13 },
@@ -394,8 +396,9 @@ function startCareer(team, champ = "MotoJunior") {
   // bonus de 16-18 años) lo devuelva a un nivel similar al que antes tenía
   // al debutar directamente en Moto3 — es una fase de desarrollo, no un
   // retraso de la progresión. AJUSTE (2ª pasada): mínimo subido a 44 para
-  // que la media de partida a los 16 años sea un poco más alta.
-  const initialOvr = randInt(44, 52);
+  // que la media de partida a los 16 años sea un poco más alta. AJUSTE
+  // (4ª pasada): subido otro pelín más, 44-52 → 46-54.
+  const initialOvr = randInt(46, 54);
   const hiddenProfile = generateHiddenProfile();
   state = {
     rider: {
@@ -1224,10 +1227,10 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // más fácil. El estreno en Moto3 recién graduado de la fase júnior suma,
   // en cambio, un pequeño empujón de forma (+2) — aparte de todo lo que ya
   // aporta el salto de OVR de la graduación — porque en la práctica se
-  // estaba quedando un poco corto.
+  // estaba quedando un poco corto. AJUSTE (4ª pasada): +2 → +3.
   const isMoto3RookieSeason = categoryChanged && state.championship === "Moto3" &&
     JUNIOR_CHAMPS.includes(previousChampionship);
-  const playerRating = state.ovr * w.rider + state.team.strength * w.team + (isMoto3RookieSeason ? 2 : 0);
+  const playerRating = state.ovr * w.rider + state.team.strength * w.team + (isMoto3RookieSeason ? 3 : 0);
 
   // Nivel base de cada rival para toda la temporada (su sitio dentro del
   // pelotón), heredado (con una ligera deriva) de la temporada anterior.
@@ -1319,9 +1322,10 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // 80%, y un 4º-9º si no eres de los mejores) se suaviza un pelín
   // específicamente en el estreno en Moto3 tras la fase júnior — un poco
   // menos de probabilidad de recortar el resultado (el rango de
-  // "consuelo", 4º-9º, se mantiene igual).
-  const champDampChance = isMoto3RookieSeason ? 0.80 : 0.85;
-  const top3DampChance = isMoto3RookieSeason ? 0.75 : 0.80;
+  // "consuelo", 4º-9º, se mantiene igual). AJUSTE (4ª pasada): un pelín
+  // más, 0.80/0.75 → 0.77/0.72.
+  const champDampChance = isMoto3RookieSeason ? 0.77 : 0.85;
+  const top3DampChance = isMoto3RookieSeason ? 0.72 : 0.80;
   const top3DampRange = [4, 9];
   if (isRookieSeason && champPosition === 1 && Math.random() < champDampChance) {
     champPosition = randInt(2, 3);
