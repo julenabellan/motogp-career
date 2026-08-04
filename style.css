@@ -493,6 +493,7 @@ body{
   gap:2px;
   flex:1;
   min-width:0;
+  border-radius:10px;
 }
 .side-label{ font-size:10px; color:var(--gray); font-weight:600; text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap; }
 .side-value{ font-size:16px; font-weight:800; }
@@ -853,31 +854,15 @@ body{
 .trend-same{ color:var(--gray-dim); }
 
 
-/* ---------- Banner de campeón ---------- */
-.champion-banner{
-  display:none;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  background:linear-gradient(90deg, #F4C400, #E6A700);
-  color:#1a1400;
-  border-radius:var(--radius-sm);
-  padding:14px 16px;
-  font-weight:800;
-  font-size:14px;
-  animation:fadeIn 300ms ease;
+/* ---------- Título ganado: recuadro dorado en "Títulos" ---------- */
+.stat-block.title-flash{
+  animation:titleFlash 2600ms ease-out;
 }
-.champion-banner.active{ display:flex; }
-.banner-close{
-  background:rgba(0,0,0,0.15);
-  border:none;
-  color:#1a1400;
-  width:26px; height:26px;
-  border-radius:8px;
-  font-size:16px;
-  font-weight:800;
-  cursor:pointer;
-  flex-shrink:0;
+@keyframes titleFlash{
+  0%   { box-shadow:0 0 0 0 rgba(244,196,0,0); }
+  8%   { box-shadow:0 0 0 3px rgba(244,196,0,0.95); }
+  55%  { box-shadow:0 0 0 3px rgba(244,196,0,0.95); }
+  100% { box-shadow:0 0 0 0 rgba(244,196,0,0); }
 }
 
 /* ---------- Scrollbar ---------- */
