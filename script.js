@@ -30,15 +30,15 @@ const FIELD = {
   // AJUSTE (7ª pasada): +3 más en las tres.
   MotoJunior:      { mean: 50, sd: 14 },
   RedBullRookies:  { mean: 53, sd: 14 },
-  YamahaR3Cup:     { mean: 46, sd: 14 },
+  YamahaR3Cup:     { mean: 47, sd: 14 },
   // AJUSTE (4ª pasada): un pelín menos exigente en general, no solo el
   // año de estreno — de 58 a 57. AJUSTE (5ª pasada): +1 de vuelta, para
   // que el salto posterior a Moto2/Supersport no sea tan brusco — 57 → 58.
   Moto3:      { mean: 59, sd: 13 }, // AJUSTE (9ª pasada): +1 más
   Moto2:      { mean: 68, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
-  SportBike:  { mean: 54, sd: 13 },
-  Supersport: { mean: 64, sd: 12 },
+  SportBike:  { mean: 55, sd: 13 },
+  Supersport: { mean: 65, sd: 12 },
   WorldSBK:   { mean: 75, sd: 11 },
   // Campeonatos nacionales de Superbike: nivel de pelotón por debajo de
   // WorldSBK, vía alternativa para pilotos que no llegan (o no se
@@ -1150,8 +1150,11 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // pelín el ritmo de progresión del piloto específicamente ahí. Poco,
   // solo un empujón, no una barbaridad. AJUSTE (12ª pasada): seguían
   // estancándose demasiadas carreras en Moto2 con el +15%, así que se
-  // sube otro escalón (1.15 → 1.30).
-  if (state.championship === "Moto2" || state.championship === "Supersport") base *= 1.30; // AJUSTE (12ª pasada): 1.15 → 1.30
+  // sube otro escalón (1.15 → 1.30). AJUSTE (17ª pasada): de temporada en
+  // temporada en Moto2 solo se veía +0 o +1 casi siempre — se sube un
+  // pelín más, específicamente en Moto2 (Supersport se queda en 1.30).
+  if (state.championship === "Moto2") base *= 1.42; // AJUSTE (17ª pasada): 1.30 → 1.42 (solo Moto2)
+  else if (state.championship === "Supersport") base *= 1.30;
 
   // 1b. Impulso de novato: los primeros años en Moto3 (16-18 años) suelen
   // ser de aprendizaje muy rápido en la vida real — se nota incluso en los
