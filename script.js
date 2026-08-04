@@ -371,7 +371,7 @@ function startCareer(team, champ = "Moto3") {
 // ============================================================
 // PANTALLA 4: DASHBOARD
 // ============================================================
-function renderDashboard() {
+function renderDashboard(justSimulated = false) {
   const r = state.rider;
   animateCountUp($("#rider-ovr"), state.ovr);
   $("#ovr-box").style.background = ovrColor(state.ovr);
@@ -401,7 +401,7 @@ function renderDashboard() {
   animateCountUp($("#rider-podiums"), career.podiums);
   animateCountUp($("#rider-titles"), career.titles);
 
-  renderHistory();
+  renderHistory(justSimulated);
   renderMarket();
   renderChampionBanner();
 }
@@ -432,7 +432,7 @@ function trendArrow(curr, prev, higherIsBetter = true) {
   return `<span class="trend ${improved ? "trend-up" : "trend-down"}">${improved ? "▲" : "▼"}</span>`;
 }
 
-function renderHistory() {
+function renderHistory(justSimulated = false) {
   const body = $("#history-body");
   body.innerHTML = "";
 
@@ -449,6 +449,12 @@ function renderHistory() {
     else if (s.championship === "MotoGP") row.classList.add("highlight");
     else if (s.championship === "Moto2") row.classList.add("blueish");
 
+    // Solo la temporada recién disputada (la última del historial, justo
+    // después de simular) arranca sus números en 0 / en el OVR anterior
+    // para poder animarlos subiendo — el resto de filas son historial fijo
+    // y se pintan directamente con su valor final.
+    const isNewest = justSimulated && s.disputed && idx === state.history.length - 1;
+
     if (!s.disputed) {
       row.innerHTML = `<span><span class="ovr-badge" style="background:${teamColor(s.team, s.championship)}">${s.age}</span></span><span class="not-played">Sin disputar — ${s.team}</span>`;
     } else {
@@ -462,18 +468,28 @@ function renderHistory() {
       const podTrend = prev ? trendArrow(s.pod, prev.pod, true) : "";
       const posTrend = prev ? trendArrow(s.pos, prev.pos, false) : "";
 
+      const ovrStart = isNewest ? (prev ? prev.ovr : s.ovr) : s.ovr;
+
       row.innerHTML = `
         <span><span class="ovr-badge" style="background:${teamColor(s.team, s.championship)}">${s.age}</span></span>
         <span class="col-team">${s.team}${titleMark}${eventDot}</span>
-        <span><span class="ovr-badge" style="background:${ovrColor(s.ovr)}">${s.ovr}</span></span>
-        <span class="stat-cell">${STAT_ICONS.cg}<span class="stat-num">${s.cg}</span>${cgTrend}</span>
-        <span class="stat-cell">${STAT_ICONS.pod}<span class="stat-num">${s.pod}</span>${podTrend}</span>
-        <span class="stat-cell">${STAT_ICONS.pol}<span class="stat-num">${s.pol}</span></span>
-        <span class="stat-cell">${STAT_ICONS.dnf}<span class="stat-num">${s.dnf}</span></span>
+        <span><span class="ovr-badge js-ovr-num" style="background:${ovrColor(s.ovr)}">${ovrStart}</span></span>
+        <span class="stat-cell">${STAT_ICONS.cg}<span class="stat-num js-stat-num" data-final="${s.cg}">${isNewest ? 0 : s.cg}</span>${cgTrend}</span>
+        <span class="stat-cell">${STAT_ICONS.pod}<span class="stat-num js-stat-num" data-final="${s.pod}">${isNewest ? 0 : s.pod}</span>${podTrend}</span>
+        <span class="stat-cell">${STAT_ICONS.pol}<span class="stat-num js-stat-num" data-final="${s.pol}">${isNewest ? 0 : s.pol}</span></span>
+        <span class="stat-cell">${STAT_ICONS.dnf}<span class="stat-num js-stat-num" data-final="${s.dnf}">${isNewest ? 0 : s.dnf}</span></span>
         <span><span class="${posClass}">${s.pos}</span>${posTrend}</span>
       `;
     }
     body.appendChild(row);
+
+    if (isNewest) {
+      const ovrBadge = row.querySelector(".js-ovr-num");
+      if (ovrBadge) animateCountUp(ovrBadge, s.ovr, 1200);
+      row.querySelectorAll(".js-stat-num").forEach((el) => {
+        animateCountUp(el, parseInt(el.dataset.final, 10), 1200);
+      });
+    }
   });
 
   // scroll al final (temporada actual)
@@ -1085,7 +1101,7 @@ function simulateSeason(categoryChanged = false) {
   if (state.age > MAX_AGE) {
     retireCareer();
   } else {
-    renderDashboard();
+    renderDashboard(true);
   }
 }
 
