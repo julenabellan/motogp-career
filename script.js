@@ -410,7 +410,8 @@ function startCareer(team, champ = "MotoJunior") {
   // otro empujón más, 46-54 → 49-57, dentro del reajuste general de toda
   // la escalera de categorías. AJUSTE (6ª pasada): +2 más, 49-57 → 51-59
   // — objetivo: llegar a Moto3 con 18 años y ~60 de media (antes ~55).
-  const initialOvr = randInt(53, 61); // AJUSTE (7ª pasada): +2 más
+  // AJUSTE (13ª pasada): +2 más, 53-61 → 55-63.
+  const initialOvr = randInt(55, 63); // AJUSTE (13ª pasada): +2 más
   const hiddenProfile = generateHiddenProfile();
   state = {
     rider: {
@@ -1116,7 +1117,21 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // 1. Margen de mejora respecto al potencial oculto — el factor con más
   // peso. Un piloto lejos de su techo puede pegar un buen salto aunque
   // no gane nada; uno que ya casi lo ha tocado apenas se mueve.
-  const room = clamp((state.potential - state.ovr) / 22, 0, 1.5);
+  let room = clamp((state.potential - state.ovr) / 22, 0, 1.5);
+  // AJUSTE (14ª pasada): el multiplicador de categoría (más abajo, 1.30)
+  // no basta por sí solo cuando "room" ya está casi a cero — multiplicar
+  // por 1.30 algo que ya es prácticamente 0 sigue siendo prácticamente 0,
+  // así que la media se quedaba plana en Moto2/Supersport en cuanto el
+  // piloto se acercaba a su potencial oculto (algo muy habitual justo en
+  // ese nivel, para la mayoría de perfiles). Se garantiza un margen mínimo
+  // específicamente en estas dos categorías, para que siempre quede algo
+  // de recorrido de mejora y la media no se aplane del todo — sigue
+  // habiendo diferencias reales según el techo oculto de cada piloto
+  // (quien tenga más margen sigue creciendo más), solo deja de llegar a
+  // cero.
+  if (state.championship === "Moto2" || state.championship === "Supersport") {
+    room = Math.max(room, 0.35);
+  }
   // AJUSTE DE DIFICULTAD (pizca, segunda pasada): multiplicador base un
   // poco más alto todavía (antes 1.42) — conseguir cosas buenas debe notarse
   // más en el OVR, sin dejar de depender del perfil oculto y la curva.
