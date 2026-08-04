@@ -175,25 +175,54 @@
 
   <!-- ============ PANTALLA 5: RETIRADA ============ -->
   <section id="screen-retiro" class="screen">
-    <h1 class="screen-title">Retirada</h1>
-    <p class="screen-subtitle" id="retiro-subtitle">Fin de una carrera.</p>
-
-    <div class="retire-card">
-      <div class="retire-stats" id="retire-stats"></div>
-      <div class="retire-teams-section">
-        <h3 class="retire-teams-title">Equipos en tu carrera</h3>
-        <div class="retire-teams" id="retire-teams"></div>
+    <div class="retiro-header">
+      <div class="retiro-mini-stat">
+        <span class="mini-label">Temporadas</span>
+        <span class="mini-value" id="retiro-mini-seasons">—</span>
+      </div>
+      <div class="retiro-mini-stat">
+        <span class="mini-label">Edad</span>
+        <span class="mini-value" id="retiro-mini-age">—</span>
+      </div>
+      <div class="ovr-box" id="retiro-ovr-box">
+        <span class="ovr-label">OVR</span>
+        <span class="ovr-value" id="retiro-mini-ovr">—</span>
       </div>
     </div>
 
-    <div class="card-actions">
-      <canvas id="trading-card-canvas" width="640" height="880" style="display:none;"></canvas>
-      <img id="trading-card-preview" class="trading-card-preview" alt="Tarjeta de piloto">
-      <button id="btn-generate-card" class="btn btn-dark">🖼️ Ver tarjeta</button>
-      <button id="btn-download-card" class="btn btn-light" style="display:none;">⬇️ Descargar tarjeta</button>
+    <div class="retiro-hero">
+      <div class="retiro-hero-flag">
+        <span class="retiro-flag-icon">🏁</span>
+        <span class="retiro-finished-label">Carrera finalizada</span>
+      </div>
+      <h1 class="retiro-rider-name" id="retiro-rider-name">PILOTO</h1>
+      <p class="screen-subtitle" id="retiro-subtitle">Tu carrera profesional ha llegado a su fin.</p>
+
+      <div class="retiro-stats-grid" id="retire-stats"></div>
     </div>
 
-    <button id="btn-play-again" class="btn btn-light">Jugar de nuevo</button>
+    <div class="retiro-teams-block">
+      <h2 class="card-title">Tu carrera</h2>
+      <div class="retiro-teams-grid" id="retire-teams"></div>
+      <div class="retiro-legend">
+        <span>🏆 Carreras ganadas</span>
+        <span>🥇 Podios</span>
+        <span>👑 Títulos de campeón</span>
+      </div>
+    </div>
+
+    <div class="retiro-card-preview-wrap">
+      <canvas id="trading-card-canvas" width="640" height="880" style="display:none;"></canvas>
+      <img id="trading-card-preview" class="trading-card-preview" alt="Tarjeta de piloto">
+    </div>
+
+    <div class="retiro-bottom-actions">
+      <div class="retiro-card-buttons">
+        <button id="btn-generate-card" class="btn btn-dark">🖼️ Ver tarjeta</button>
+        <button id="btn-download-card" class="btn btn-dark" style="display:none;">⬇️ Descargar tarjeta</button>
+      </div>
+      <button id="btn-play-again" class="btn btn-light">Jugar de nuevo</button>
+    </div>
   </section>
 
 </div>
