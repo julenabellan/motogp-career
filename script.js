@@ -454,6 +454,7 @@ function renderHistory(justSimulated = false) {
     // para poder animarlos subiendo — el resto de filas son historial fijo
     // y se pintan directamente con su valor final.
     const isNewest = justSimulated && s.disputed && idx === state.history.length - 1;
+    if (isNewest) row.classList.add("row-enter");
 
     if (!s.disputed) {
       row.innerHTML = `<span><span class="ovr-badge" style="background:${teamColor(s.team, s.championship)}">${s.age}</span></span><span class="not-played">Sin disputar — ${s.team}</span>`;
