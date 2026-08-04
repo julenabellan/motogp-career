@@ -298,10 +298,22 @@ body{
   flex-direction:column;
   gap:6px;
   cursor:pointer;
-  transition:border-color 200ms ease, transform 150ms ease, background 200ms ease;
+  transition:border-color 200ms ease, transform 150ms ease, background 200ms ease, opacity 900ms ease, box-shadow 250ms ease;
   min-width:0;
 }
 .offer-card:active{ transform:scale(0.98); }
+
+/* Animación al elegir equipo: la tarjeta elegida se marca con un trazo
+   blanco; las otras dos se van apagando poco a poco antes de que se
+   dispute la temporada. */
+#market-offers.offers-locked .offer-card{ pointer-events:none; }
+.offer-card.offer-picked{
+  border-color:#FFFFFF;
+  box-shadow:0 0 0 2px rgba(255,255,255,0.55);
+}
+.offer-card.offer-fading{
+  opacity:0.22;
+}
 .offer-card:hover{ border-color:#444; background:#1c1c1c; }
 .offer-card.current{ border-color:var(--green); }
 .offer-top{
