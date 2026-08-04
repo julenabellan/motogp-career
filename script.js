@@ -17,9 +17,12 @@ const MAX_AGE_NATIONAL = 41;
 const FIELD = {
   // Fase de formación (16-17 años, antes de Moto3/SportBike): pelotón más
   // flojo y todavía muy irregular — es la primera parrilla profesional.
-  MotoJunior:      { mean: 45, sd: 14 },
-  RedBullRookies:  { mean: 47, sd: 14 },
-  YamahaR3Cup:     { mean: 40, sd: 14 },
+  // AJUSTE (pizca): nivel medio un pelín más bajo de lo inicial, para que
+  // llegar preparado a los 18 años sea un poco más asequible, sin que se
+  // note apenas.
+  MotoJunior:      { mean: 43, sd: 14 },
+  RedBullRookies:  { mean: 45, sd: 14 },
+  YamahaR3Cup:     { mean: 38, sd: 14 },
   Moto3:      { mean: 58, sd: 13 },
   Moto2:      { mean: 68, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
@@ -385,12 +388,14 @@ const NEGATIVE_EVENTS = [
 function startCareer(team, champ = "MotoJunior") {
   // AJUSTE FASE DE FORMACIÓN: el piloto arranca con un OVR bastante más
   // bajo que antes (antes se debutaba ya en Moto3/SportBike con 58-68).
-  // La fase júnior está pensada para que, en 1-2 temporadas, el ritmo de
-  // crecimiento normal (ver computeSeasonGrowth, con el impulso extra de
-  // "room" al estar tan lejos del potencial y el bonus de 16-18 años) lo
-  // devuelva a un nivel similar al que antes tenía al debutar directamente
-  // en Moto3 — es una fase de desarrollo, no un retraso de la progresión.
-  const initialOvr = randInt(38, 48);
+  // La fase júnior está pensada para que, en torno a los 18 años (2
+  // temporadas), el ritmo de crecimiento normal (ver computeSeasonGrowth,
+  // con el impulso extra de "room" al estar tan lejos del potencial y el
+  // bonus de 16-18 años) lo devuelva a un nivel similar al que antes tenía
+  // al debutar directamente en Moto3 — es una fase de desarrollo, no un
+  // retraso de la progresión. AJUSTE (pizca): rango un pelín más alto de
+  // lo inicial, para que llegar a tiempo sea un poco más asequible.
+  const initialOvr = randInt(40, 50);
   const hiddenProfile = generateHiddenProfile();
   state = {
     rider: {
@@ -619,12 +624,14 @@ function lastSeasonWasGood() {
 // raro, no solo "poco frecuente".
 function pickPromotionThreshold(fromChamp) {
   const r = Math.random();
-  // Fase de formación: el ascenso a Moto3/SportBike debe llegar rápido —
-  // 1 temporada es lo más habitual, 2 como mucho. Nunca debe convertirse
-  // en un tercer o cuarto año estancado en la categoría júnior.
+  // Fase de formación: la idea es que la mayoría llegue a Moto3/SportBike
+  // con 18 años (2 temporadas en la categoría júnior, empezando a los 16),
+  // con solo un pequeño margen de variación — un ascenso relámpago con 17
+  // años, o alguno que se asiente un poco más y llegue con 19.
   if (fromChamp === "MotoJunior" || fromChamp === "RedBullRookies" || fromChamp === "YamahaR3Cup") {
-    if (r < 0.45) return 1;
-    return 2;
+    if (r < 0.10) return 1;
+    if (r < 0.90) return 2; // lo más habitual: llegar con 18 años
+    return 3;
   }
   if (fromChamp === "Moto3") {
     if (r < 0.04) return 1;  // ascenso relámpago, muy raro
