@@ -879,6 +879,14 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged) {
   // más en el OVR, sin dejar de depender del perfil oculto y la curva.
   let base = room * p.learningRate * curveMultiplier(p.curve, state.age) * 1.55;
 
+  // AJUSTE DE DIFICULTAD: muro adicional a partir de 85 de OVR, aparte del
+  // margen respecto al potencial (`room`). Cuanto más alto el OVR actual,
+  // más cuesta seguir subiendo — así superar los 88-90 queda reservado de
+  // verdad a los pilotos con mucho potencial Y buen ritmo de aprendizaje
+  // (los "muy top"), no a cualquiera que se vaya acercando a su techo.
+  const highOvrWall = state.ovr >= 85 ? clamp(1 - (state.ovr - 85) / 10, 0.15, 1) : 1;
+  base *= highOvrWall;
+
   // 1b. Impulso de novato: los primeros años en Moto3 (16-18 años) suelen
   // ser de aprendizaje muy rápido en la vida real — se nota incluso en los
   // pilotos de progresión más lenta. Se difumina hacia los 20.
@@ -973,7 +981,14 @@ function simulateSeason(categoryChanged = false) {
   }
 
   const w = CATEGORY_WEIGHTS[state.championship] || CATEGORY_WEIGHTS.Moto3;
-  const playerRating = state.ovr * w.rider + state.team.strength * w.team;
+
+  // AJUSTE DE DIFICULTAD: la temporada de debut absoluto en Moto3 (16 años,
+  // sin ninguna temporada previa en la carrera) es un pelín más dura que el
+  // resto — el "shock" real de subirse por primera vez a una moto de
+  // Gran Premio. No afecta a un regreso posterior a Moto3 tras un descenso,
+  // ni al debut en SportBike.
+  const isCareerDebut = state.history.length === 0 && state.championship === "Moto3";
+  const playerRating = state.ovr * w.rider + state.team.strength * w.team - (isCareerDebut ? 3 : 0);
 
   // Nivel base de cada rival para toda la temporada (su sitio dentro del
   // pelotón), heredado (con una ligera deriva) de la temporada anterior.
