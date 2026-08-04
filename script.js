@@ -38,6 +38,23 @@ let state = null; // estado de partida en curso
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
+// Anima un número subiendo (o bajando) desde el valor que ya se ve en
+// pantalla hasta el valor nuevo, en 1-2 segundos — se usa para victorias,
+// podios y títulos en la tarjeta del piloto.
+function animateCountUp(el, to, duration = 1200) {
+  const from = parseInt(el.textContent, 10) || 0;
+  if (from === to) { el.textContent = to; return; }
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 2); // ease-out
+    el.textContent = Math.round(from + (to - from) * eased);
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = to;
+  }
+  requestAnimationFrame(step);
+}
+
 function showScreen(id) {
   $$(".screen").forEach((s) => s.classList.remove("active"));
   $(`#${id}`).classList.add("active");
@@ -380,9 +397,9 @@ function renderDashboard() {
     if (s.pos === 1) acc.titles += 1;
     return acc;
   }, { wins: 0, podiums: 0, titles: 0 });
-  $("#rider-wins").textContent = career.wins;
-  $("#rider-podiums").textContent = career.podiums;
-  $("#rider-titles").textContent = career.titles;
+  animateCountUp($("#rider-wins"), career.wins);
+  animateCountUp($("#rider-podiums"), career.podiums);
+  animateCountUp($("#rider-titles"), career.titles);
 
   renderHistory();
   renderMarket();
@@ -467,6 +484,7 @@ function renderHistory() {
 function renderMarket() {
   const wrap = $("#market-offers");
   wrap.innerHTML = "";
+  wrap.classList.remove("offers-locked");
 
   const offers = generateMarketOffers();
   const renewed = offers.some((o) => o.isCurrent);
@@ -480,12 +498,23 @@ function renderMarket() {
     const card = document.createElement("div");
     card.className = "offer-card" + (o.isCurrent ? " current" : "");
     card.innerHTML = offerCardHTML(o.team, o.championship);
-    // Elegir un equipo ficha para la próxima temporada Y la simula al momento.
+    // Elegir un equipo ficha para la próxima temporada Y la simula al momento,
+    // pero primero se ve un pequeño gesto visual: la tarjeta elegida se marca
+    // con un trazo blanco y las otras se apagan poco a poco (~0.9s).
     card.addEventListener("click", () => {
-      const categoryChanged = o.championship !== state.championship || o.team.name !== state.team.name;
-      state.team = { name: o.team.name, strength: o.team.strength };
-      state.championship = o.championship;
-      simulateSeason(categoryChanged);
+      if (wrap.classList.contains("offers-locked")) return;
+      wrap.classList.add("offers-locked");
+      Array.from(wrap.children).forEach((c) => {
+        if (c === card) c.classList.add("offer-picked");
+        else c.classList.add("offer-fading");
+      });
+
+      setTimeout(() => {
+        const categoryChanged = o.championship !== state.championship || o.team.name !== state.team.name;
+        state.team = { name: o.team.name, strength: o.team.strength };
+        state.championship = o.championship;
+        simulateSeason(categoryChanged);
+      }, 900);
     });
     wrap.appendChild(card);
   });
