@@ -25,7 +25,48 @@ function flagImg(code, className = "flag-img") {
   return `<img class="${className}" src="https://flagcdn.com/w40/${c}.png" srcset="https://flagcdn.com/w80/${c}.png 2x" alt="${code}" loading="lazy">`;
 }
 
+// Nombres legibles para los campeonatos cuyo identificador interno no
+// coincide con el nombre que debe verse en pantalla (insignias de oferta,
+// etiqueta de campeonato del piloto, desglose de títulos, tarjetas de
+// equipo de la retirada, etc.). El resto de campeonatos (Moto3, Moto2,
+// MotoGP, SportBike, Supersport, WorldSBK, ESBK, BSB, CIV) usan su propio
+// identificador tal cual como nombre visible, así que no hace falta
+// listarlos aquí.
+const CHAMP_LABELS = {
+  MotoJunior: "FIM JuniorGP",
+  RedBullRookies: "Red Bull Rookies Cup",
+  YamahaR3Cup: "Yamaha R3 Cup",
+};
+function champLabel(key) {
+  return CHAMP_LABELS[key] || key;
+}
+
 const TEAMS = {
+  // ----------------------------------------------------------------
+  // FASE DE FORMACIÓN (16 años, punto de partida de la carrera) — tres
+  // campeonatos júnior, previos a Moto3 y SportBike:
+  //   · FIM JuniorGP (varios equipos)      → vía hacia Moto3
+  //   · Red Bull Rookies Cup (monomarca)   → vía hacia Moto3
+  //   · Yamaha R3 Cup (monomarca)          → vía hacia SportBike
+  // Los campeonatos monomarca solo tienen un equipo: toda la parrilla
+  // corre con la misma moto, así que el "strength" de equipo apenas debe
+  // influir en el resultado (ver CATEGORY_WEIGHTS en script.js).
+  // ----------------------------------------------------------------
+  MotoJunior: [
+    { name: "Estrella Galicia 0,0",              strength: 46, color: "#1DB954", logo: "EstrellaGalicia" },
+    { name: "Aspar Junior Team",                  strength: 45, color: "#0199b1", logo: "ASPAR"           },
+    { name: "KTM Junior Team",                    strength: 44, color: "#ea5d24", logo: "Ktm"             },
+    { name: "Honda Talent Junior Team",            strength: 43, color: "#cc1517", logo: "HondaAsia"      },
+    { name: "MTA Junior Team",                     strength: 42, color: "#ca2c23", logo: "MTA"            },
+    { name: "CIP Green Power Junior",             strength: 41, color: "#12a236", logo: "CIP"            },
+    { name: "SNIPERS Junior Team",                strength: 40, color: "#f9eb1d", logo: "SNIPERS"        },
+  ],
+  RedBullRookies: [
+    { name: "Red Bull Rookies Cup",               strength: 42, color: "#0b1f6e", logo: "RedBullRookies" },
+  ],
+  YamahaR3Cup: [
+    { name: "Yamaha R3 bLU cRU Cup",              strength: 36, color: "#21409a", logo: "YamahaR3Cup"    },
+  ],
   MotoGP: [
     { name: "Ducati Lenovo Team",                  strength: 96, color: "#CC0000",  logo: "Ducati"     },
     { name: "Aprilia Racing",                       strength: 93, color: "#810098",  logo: "Aprilia"    },
