@@ -99,6 +99,27 @@ const TEAMS = {
     { name: "Cerba Yamaha Racing Team",               strength: 69, color: "#21409a", logo: "Cerba"          },
     { name: "WRP Racing",                             strength: 71, color: "#efff00", logo: "WRP"            },
   ],
+  // Campeonatos NACIONALES de Superbike — por debajo de WorldSBK. No son
+  // un escalón que se ascienda dentro de la escalera principal, sino una
+  // vía alternativa para pilotos que no consiguen llegar (o mantenerse) en
+  // los campeonatos superiores. De momento, 3 equipos fijos por campeonato
+  // (Yamaha / Honda / Kawasaki + nombre del campeonato); las vías de acceso
+  // y salida hacia el resto de categorías se definirán más adelante.
+  ESBK: [
+    { name: "Yamaha ESBK",   strength: 65, color: "#21409a", logo: "Yamaha"   },
+    { name: "Honda ESBK",    strength: 63, color: "#cc1517", logo: "Honda"    },
+    { name: "Kawasaki ESBK", strength: 61, color: "#59c84a", logo: "Kawasaki" },
+  ],
+  BSB: [
+    { name: "Yamaha BSB",   strength: 66, color: "#21409a", logo: "Yamaha"   },
+    { name: "Honda BSB",    strength: 64, color: "#cc1517", logo: "Honda"    },
+    { name: "Kawasaki BSB", strength: 62, color: "#59c84a", logo: "Kawasaki" },
+  ],
+  CIV: [
+    { name: "Yamaha CIV SBK",   strength: 64, color: "#21409a", logo: "Yamaha"   },
+    { name: "Honda CIV SBK",    strength: 62, color: "#cc1517", logo: "Honda"    },
+    { name: "Kawasaki CIV SBK", strength: 60, color: "#59c84a", logo: "Kawasaki" },
+  ],
   // Escalón de entrada a la escalera de Superbikes, por debajo de
   // Supersport — el equivalente, en esa escalera, a lo que Moto3 es para
   // Moto2/MotoGP.
