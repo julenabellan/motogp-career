@@ -373,7 +373,7 @@ function startCareer(team, champ = "Moto3") {
 // ============================================================
 function renderDashboard() {
   const r = state.rider;
-  $("#rider-ovr").textContent = state.ovr;
+  animateCountUp($("#rider-ovr"), state.ovr);
   $("#ovr-box").style.background = ovrColor(state.ovr);
   $("#rider-flag").innerHTML = flagImg(r.nacionalidad.code, "flag-img flag-img-lg");
   $("#rider-name").textContent = r.apellido;
