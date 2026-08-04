@@ -854,15 +854,20 @@ body{
 .trend-same{ color:var(--gray-dim); }
 
 
-/* ---------- Título ganado: recuadro dorado en "Títulos" ---------- */
-.stat-block.title-flash{
-  animation:titleFlash 2600ms ease-out;
+/* ---------- Título ganado: insignia dorada alrededor del número ---------- */
+#rider-titles{
+  display:inline-block;
+  padding:2px 9px;
+  border-radius:8px;
 }
-@keyframes titleFlash{
-  0%   { box-shadow:0 0 0 0 rgba(244,196,0,0); }
-  8%   { box-shadow:0 0 0 3px rgba(244,196,0,0.95); }
-  55%  { box-shadow:0 0 0 3px rgba(244,196,0,0.95); }
-  100% { box-shadow:0 0 0 0 rgba(244,196,0,0); }
+#rider-titles.title-flash{
+  animation:titleNumFlash 2600ms ease-out;
+}
+@keyframes titleNumFlash{
+  0%   { background:rgba(244,196,0,0); box-shadow:0 0 0 0 rgba(244,196,0,0); }
+  8%   { background:rgba(244,196,0,0.20); box-shadow:0 0 0 2px rgba(244,196,0,0.95); }
+  55%  { background:rgba(244,196,0,0.20); box-shadow:0 0 0 2px rgba(244,196,0,0.95); }
+  100% { background:rgba(244,196,0,0); box-shadow:0 0 0 0 rgba(244,196,0,0); }
 }
 
 /* ---------- Scrollbar ---------- */
