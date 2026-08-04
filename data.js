@@ -65,7 +65,7 @@ const TEAMS = {
     { name: "Red Bull Rookies Cup",               strength: 42, color: "#0b1f6e", logo: "RedBullRookies" },
   ],
   YamahaR3Cup: [
-    { name: "Yamaha R3 bLU cRU Cup",              strength: 36, color: "#21409a", logo: "YamahaR3Cup"    },
+    { name: "Yamaha R3 bLU cRU Cup",              strength: 36, color: "#21409a", logo: "R3Cup"    },
   ],
   MotoGP: [
     { name: "Ducati Lenovo Team",                  strength: 96, color: "#CC0000",  logo: "Ducati"     },
