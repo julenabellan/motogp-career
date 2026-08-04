@@ -106,9 +106,9 @@ const TEAMS = {
   // (Yamaha / Honda / Kawasaki + nombre del campeonato); las vías de acceso
   // y salida hacia el resto de categorías se definirán más adelante.
   ESBK: [
-    { name: "Yamaha ESBK",   strength: 65, color: "#21409a", logo: "Yamaha"   },
-    { name: "Honda ESBK",    strength: 63, color: "#cc1517", logo: "Honda"    },
-    { name: "Kawasaki ESBK", strength: 61, color: "#59c84a", logo: "Kawasaki" },
+    { name: "BMW EasyRace Team",   strength: 60, color: "#21409a", logo: "BMW"   },
+    { name: "Team Honda Laglisse",    strength: 63, color: "#cc1517", logo: "Honda"    },
+    { name: "Kawasaki JDO Racing Team", strength: 61, color: "#59c84a", logo: "Kawasaki" },
   ],
   BSB: [
     { name: "Yamaha BSB",   strength: 66, color: "#21409a", logo: "Yamaha"   },
