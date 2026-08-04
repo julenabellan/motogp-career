@@ -1134,7 +1134,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // deberían — sin tocar el nivel de esas categorías (FIELD), se sube un
   // pelín el ritmo de progresión del piloto específicamente ahí. Poco,
   // solo un empujón, no una barbaridad.
-  if (state.championship === "Moto2" || state.championship === "Supersport") base *= 1.12;
+  if (state.championship === "Moto2" || state.championship === "Supersport") base *= 1.15; // AJUSTE (10ª pasada): 1.12 → 1.15
 
   // 1b. Impulso de novato: los primeros años en Moto3 (16-18 años) suelen
   // ser de aprendizaje muy rápido en la vida real — se nota incluso en los
@@ -1367,18 +1367,24 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   const champDampChance = (isMoto3RookieSeason || isMoto2RookieSeason) ? 0.77 : 0.85;
   const top3DampChance = (isMoto3RookieSeason || isMoto2RookieSeason) ? 0.72 : 0.80;
   const top3DampRange = [4, 9];
+  // FALLO CORREGIDO (11ª pasada): estas dos comprobaciones estaban
+  // encadenadas como dos "if" independientes, así que un debutante no-top-
+  // tier que quedaba 1º en bruto podía amortiguarse primero a 2º/3º y
+  // LUEGO, sobre ese mismo resultado ya rebajado, volver a amortiguarse
+  // una segunda vez hasta 4º-9º — un doble recorte en cascada que un 2º o
+  // 3º genuino (en bruto) nunca sufría, porque solo pasaba por el segundo
+  // chequeo una vez. Eso sesgaba los resultados de forma rara. Con
+  // "else if" cada temporada de debut solo puede amortiguarse una vez.
   if (isRookieSeason && champPosition === 1 && Math.random() < champDampChance) {
     champPosition = randInt(2, 3);
-  }
-
-  // Además de amortiguar el título, un debutante que NO es de verdad uno de
-  // los mejores del pelotón esa temporada (ver isTopTier, calculado antes
-  // de disputar las carreras) rara vez debe firmar una temporada de debut
-  // entre los 3 primeros solo por el azar del campeonato — eso hay que
-  // ganárselo siendo un piloto top. La mayoría de esas veces el resultado
-  // se "amortigua" a una posición más realista para un debutante, aunque
-  // la temporada siga contando como sólida.
-  if (isRookieSeason && champPosition <= 3 && !isTopTier && Math.random() < top3DampChance) {
+  } else if (isRookieSeason && champPosition <= 3 && !isTopTier && Math.random() < top3DampChance) {
+    // Además de amortiguar el título, un debutante que NO es de verdad uno
+    // de los mejores del pelotón esa temporada (ver isTopTier, calculado
+    // antes de disputar las carreras) rara vez debe firmar una temporada
+    // de debut entre los 3 primeros solo por el azar del campeonato — eso
+    // hay que ganárselo siendo un piloto top. La mayoría de esas veces el
+    // resultado se "amortigua" a una posición más realista para un
+    // debutante, aunque la temporada siga contando como sólida.
     champPosition = randInt(top3DampRange[0], top3DampRange[1]);
   }
 
