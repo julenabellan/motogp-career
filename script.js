@@ -622,13 +622,15 @@ const LATERAL_LADDER = {
 
 // Campeonatos nacionales de Superbike (por debajo de WorldSBK). Cuando
 // lleguen ofertas de esta vía, nunca deben aparecer los 3 a la vez: como
-// mucho 2, y también puede no llegar ninguna. Las condiciones exactas para
-// que se ofrezcan (desde qué categoría, con qué rendimiento) están
-// pendientes de definir — este helper ya deja lista la selección de
-// cuántos y cuáles ofrecer en cuanto se conecte a generateMarketOffers().
+// mucho 2, y también puede no llegar ninguna.
 const NATIONAL_CHAMPS = ["ESBK", "BSB", "CIV"];
-function pickNationalOffers(minStrength, maxStrength) {
-  const howMany = [0, 1, 1, 2][randInt(0, 3)]; // 0 o 1 lo más habitual, 2 más raro
+function pickNationalOffers(minStrength, maxStrength, boosted = false) {
+  // Distribución base: 0 o 1 lo más habitual, 2 más raro. Con "boosted"
+  // (piloto de WorldSBK a los 33-34, viendo cómo se le acaba el nivel
+  // máximo) baja un pelín la probabilidad de que no llegue ninguna oferta
+  // nacional y sube un pelín la de que lleguen 2.
+  const pool = boosted ? [0, 1, 1, 1, 2, 2] : [0, 0, 1, 1, 1, 2];
+  const howMany = pool[randInt(0, pool.length - 1)];
   const chosen = [...NATIONAL_CHAMPS].sort(() => Math.random() - 0.5).slice(0, howMany);
   return chosen.map((champ) => ({
     team: pickTeamByStrength(champ, minStrength, maxStrength),
