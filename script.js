@@ -785,6 +785,37 @@ function generateMarketOffers() {
     }
   }
 
+  // Vía hacia los campeonatos NACIONALES de Superbike (ESBK, BSB, CIV) —
+  // refugio para quien no consigue llegar (o mantenerse) en los
+  // campeonatos superiores. Tres puertas distintas de entrada:
+  //   1) Desde Moto2 o Supersport, a partir de los 24-25 años, si esta
+  //      temporada no ha traído ascenso (no hay targetChamp).
+  //   2) Específica de Supersport: 4+ temporadas estancado en la
+  //      categoría, o 26 años o más, sin nivel para subir a Moto2 ni a
+  //      WorldSBK (tampoco hay targetChamp ni salida lateral a Moto2).
+  //   3) Desde WorldSBK, a los 33-34 años, cuando el piloto empieza a
+  //      quedar de forma habitual fuera del Top 10 — simula el final de
+  //      su carrera al máximo nivel.
+  // Nunca llegan las 3 ofertas nacionales a la vez (ver pickNationalOffers).
+  const seasonsStuck4 = (state.seasonsInChamp || 0) >= 4;
+  const outsideTop10Recently = state.history.length >= 2 &&
+    state.history.slice(-2).every((s) => s.championship === state.championship && s.pos > 10);
+  const ageGate24_25 = state.age >= 25 || (state.age === 24 && Math.random() < 0.5);
+  const ageGate33_34 = state.age >= 34 || (state.age === 33 && Math.random() < 0.5);
+  const stuckWithoutPromotion =
+    (state.championship === "Moto2" || state.championship === "Supersport") &&
+    ageGate24_25 && !targetChamp;
+  const supersportDeadEnd =
+    state.championship === "Supersport" && !targetChamp && !sspToMoto2Pick &&
+    (seasonsStuck4 || state.age >= 26);
+  const worldSbkCareerFading =
+    state.championship === "WorldSBK" && ageGate33_34 && outsideTop10Recently;
+
+  let nationalPicks = [];
+  if (stuckWithoutPromotion || supersportDeadEnd || worldSbkCareerFading) {
+    nationalPicks = pickNationalOffers(55, 70);
+  }
+
   const sameLevelCandidates = TEAMS[state.championship]
     .filter((t) => t.name !== state.team.name)
     .map((t) => ({ team: t, championship: state.championship }))
@@ -803,6 +834,7 @@ function generateMarketOffers() {
   if (spbToMoto3Pick) picks.push(spbToMoto3Pick);
   if (demotionPick) picks.push(demotionPick);
   if (stagnationPick) picks.push(stagnationPick);
+  nationalPicks.forEach((p) => picks.push(p));
 
   // Con el retiro ya disponible, solo se añade 1 oferta extra (2 en total
   // junto con la renovación) para que el retiro sea la tercera opción,
