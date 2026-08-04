@@ -357,9 +357,14 @@ body{
   border-radius:20px;
   text-transform:uppercase;
   letter-spacing:0.3px;
-  white-space:nowrap;
+  /* Los campeonatos júnior (p.ej. "Red Bull Rookies Cup") tienen nombres
+     más largos que el resto — se permite que la insignia rompa en dos
+     líneas en vez de desbordar la tarjeta con nowrap. */
+  white-space:normal;
   display:block;
+  max-width:100%;
   width:fit-content;
+  text-align:center;
   margin:0 auto;
 }
 .offer-row{
