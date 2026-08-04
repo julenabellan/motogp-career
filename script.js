@@ -330,7 +330,7 @@ function startCareer(team, champ = "Moto3") {
     team: { name: team.name, strength: team.strength },
     championship: champ,
     seasonsInChamp: 0,
-    promotionReadyAt: pickPromotionThreshold(),
+    promotionReadyAt: pickPromotionThreshold(champ),
     history: [],
     seasonNumber: 1,
   };
@@ -457,6 +457,12 @@ function renderMarket() {
   wrap.innerHTML = "";
 
   const offers = generateMarketOffers();
+  const renewed = offers.some((o) => o.isCurrent);
+
+  $("#market-hint").textContent = renewed
+    ? "Elige equipo para disputar la temporada"
+    : `${state.team.name} no ha renovado tu contrato — elige tu nuevo equipo para la temporada`;
+  $("#market-hint").classList.toggle("market-hint-warning", !renewed);
 
   offers.forEach((o) => {
     const card = document.createElement("div");
@@ -501,8 +507,18 @@ function lastSeasonWasGood() {
 // año. No es una regla fija: la mayoría de pilotos tarda 2-3 temporadas
 // (lo habitual en la parrilla real), pero hay una pequeña posibilidad de
 // un ascenso relámpago (1) o de asentarse más tiempo de lo normal (4).
-function pickPromotionThreshold() {
+// Saltar de Moto3 a Moto2 es, a propósito, el ascenso más difícil de toda
+// la carrera (el filtro real de la parrilla): se exige más tiempo asentado
+// de normal (3 temporadas es lo habitual) y el ascenso relámpago es muy
+// raro, no solo "poco frecuente".
+function pickPromotionThreshold(fromChamp) {
   const r = Math.random();
+  if (fromChamp === "Moto3") {
+    if (r < 0.04) return 1;  // ascenso relámpago, muy raro
+    if (r < 0.22) return 2;
+    if (r < 0.70) return 3;  // lo más habitual, saliendo de Moto3
+    return 4;
+  }
   if (r < 0.10) return 1; // ascenso meteórico, poco frecuente
   if (r < 0.55) return 2; // lo más habitual
   if (r < 0.90) return 3; // también muy habitual
@@ -520,6 +536,28 @@ function seasonsStuckBadly() {
          a.pos >= 18 && b.pos >= 18;
 }
 
+// Tres temporadas SEGUIDAS sin entrar siquiera en el top 10 del
+// campeonato, dentro de la categoría actual: no es tan grave como estar
+// hundido (ver seasonsStuckBadly), pero sí motivo para que de vez en
+// cuando te llegue alguna oferta para probar suerte en otro sitio, en vez
+// de seguir estancado a mitad de tabla año tras año.
+function seasonsStuckMediocre() {
+  const h = state.history;
+  if ((state.seasonsInChamp || 0) < 3 || h.length < 3) return false;
+  const recent = h.slice(-3);
+  return recent.every((s) => s.championship === state.championship && s.pos > 10);
+}
+
+// Categoría "hermana" de la otra escalera, al mismo nivel aproximado: la
+// vía lateral que se ofrece cuando un piloto se estanca (ver
+// seasonsStuckMediocre) en vez de subir o bajar dentro de su propia
+// escalera.
+const LATERAL_LADDER = {
+  Moto3: "SportBike", SportBike: "Moto3",
+  Moto2: "Supersport", Supersport: "Moto2",
+  MotoGP: "WorldSBK", WorldSBK: "MotoGP",
+};
+
 // Elige un equipo de un campeonato dentro de un rango de nivel (strength),
 // para ofrecer un salto lateral acorde: un equipo "mediano" para un piloto
 // de Moto2 a mitad de tabla, uno más top para un buen piloto de MotoGP, o
@@ -536,11 +574,21 @@ function generateMarketOffers() {
   const currentTeamData = findTeamData(state.team.name, state.championship) ||
     { name: state.team.name, strength: state.team.strength, color: teamColor(state.team.name, state.championship) };
 
-  // Oferta de renovación: SIEMPRE disponible.
-  offers.push({ team: currentTeamData, championship: state.championship, isCurrent: true });
-
   const lastGood = lastSeasonWasGood();
   const lastSeason = state.history[state.history.length - 1];
+
+  // No renovación: si la temporada ha sido claramente mala (fuera del
+  // top 15), a veces (no muy a menudo) tu propio equipo decide no seguir
+  // contando contigo. No es la norma — la mayoría de las malas temporadas
+  // el equipo sigue confiando en ti — pero es una posibilidad real.
+  const badSeason = lastSeason && !lastGood && lastSeason.pos >= 15;
+  const nonRenewal = badSeason && Math.random() < 0.15;
+
+  // Oferta de renovación: disponible siempre, salvo que el equipo decida
+  // no renovar (ver nonRenewal más arriba).
+  if (!nonRenewal) {
+    offers.push({ team: currentTeamData, championship: state.championship, isCurrent: true });
+  }
 
   // El ascenso de categoría exige, de normal, haber cumplido ya el tiempo
   // "esperado" en la categoría actual (2-3 temporadas lo más habitual, ver
@@ -645,6 +693,20 @@ function generateMarketOffers() {
     }
   }
 
+  // Estancamiento: 3 temporadas seguidas sin top 10 en la categoría actual
+  // pueden traer, de vez en cuando, una oferta lateral hacia la escalera
+  // hermana (ver LATERAL_LADDER) a un nivel de equipo parecido al actual —
+  // ni ascenso ni descenso, solo un cambio de aires cuando el nivel actual
+  // no acaba de cuajar.
+  let stagnationPick = null;
+  if (seasonsStuckMediocre() && Math.random() < 0.4) {
+    const target = LATERAL_LADDER[state.championship];
+    if (target) {
+      const cs = state.team.strength;
+      stagnationPick = { team: pickTeamByStrength(target, cs - 10, cs + 6), championship: target };
+    }
+  }
+
   const sameLevelCandidates = TEAMS[state.championship]
     .filter((t) => t.name !== state.team.name)
     .map((t) => ({ team: t, championship: state.championship }))
@@ -662,13 +724,18 @@ function generateMarketOffers() {
   if (sspToMoto2Pick) picks.push(sspToMoto2Pick);
   if (spbToMoto3Pick) picks.push(spbToMoto3Pick);
   if (demotionPick) picks.push(demotionPick);
+  if (stagnationPick) picks.push(stagnationPick);
 
   // Con el retiro ya disponible, solo se añade 1 oferta extra (2 en total
   // junto con la renovación) para que el retiro sea la tercera opción,
   // no una tarjeta añadida aparte. Si ya hay ofertas especiales (ascenso
   // y/o salto lateral) no se recortan: el jugador siempre ve todas las
   // vías reales que se ha ganado, aunque sean más de las "normales".
-  const extraPicksNeeded = state.age >= RETIRE_MIN_AGE ? 1 : 2;
+  // Si no ha habido renovación, hace falta una oferta extra más (no hay
+  // "renovación" que cuente como una de las tres tarjetas).
+  const extraPicksNeeded = state.age >= RETIRE_MIN_AGE
+    ? (nonRenewal ? 2 : 1)
+    : (nonRenewal ? 3 : 2);
   while (picks.length < extraPicksNeeded && sameLevelCandidates.length) {
     picks.push(sameLevelCandidates.shift());
   }
@@ -844,7 +911,7 @@ function simulateSeason(categoryChanged = false) {
   // depender solo de tener una temporada buena y se vuelve más gradual.
   if (categoryChanged) {
     state.seasonsInChamp = 1;
-    state.promotionReadyAt = pickPromotionThreshold();
+    state.promotionReadyAt = pickPromotionThreshold(state.championship);
   } else {
     state.seasonsInChamp = (state.seasonsInChamp || 0) + 1;
   }
@@ -936,6 +1003,17 @@ function simulateSeason(categoryChanged = false) {
   const isRookieSeason = (state.seasonsInChamp || 1) === 1;
   if (isRookieSeason && champPosition === 1 && Math.random() < 0.85) {
     champPosition = randInt(2, 3);
+  }
+
+  // Además de amortiguar el título, un debutante que NO es de verdad uno de
+  // los mejores del pelotón esa temporada (ver isTopTier, calculado antes
+  // de disputar las carreras) rara vez debe firmar una temporada de debut
+  // entre los 3 primeros solo por el azar del campeonato — eso hay que
+  // ganárselo siendo un piloto top. La mayoría de esas veces (80%) el
+  // resultado se "amortigua" a una posición más realista para un
+  // debutante (4º-9º), aunque la temporada siga contando como sólida.
+  if (isRookieSeason && champPosition <= 3 && !isTopTier && Math.random() < 0.80) {
+    champPosition = randInt(4, 9);
   }
 
   const isChampion = champPosition === 1;
