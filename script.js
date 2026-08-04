@@ -5,6 +5,10 @@
 const STORAGE_KEY = "motogpCareerState";
 const RETIRE_MIN_AGE = 33;
 const MAX_AGE = 38;
+// Los campeonatos nacionales (ESBK/BSB/CIV) exigen menos físico y permiten
+// alargar la carrera deportiva más allá del límite habitual — hasta 3
+// temporadas extra si el piloto sigue compitiendo ahí al llegar al tope.
+const MAX_AGE_NATIONAL = 41;
 
 // Pelotón de cada categoría: nivel medio y variabilidad de los rivales.
 // Cuanto más alta la categoría, más alto (y más apretado) es el nivel medio
@@ -638,6 +642,14 @@ function pickNationalOffers(minStrength, maxStrength, boosted = false) {
   }));
 }
 
+// Igual que pickNationalOffers, pero garantiza SIEMPRE al menos 1 oferta
+// (nunca 0): se usa cuando el mercado debe asegurar como mínimo una vía
+// de vuelta a un campeonato nacional, en vez de dejarlo al azar.
+function pickGuaranteedNationalOffer(minStrength, maxStrength) {
+  const champ = NATIONAL_CHAMPS[randInt(0, NATIONAL_CHAMPS.length - 1)];
+  return { team: pickTeamByStrength(champ, minStrength, maxStrength), championship: champ };
+}
+
 // Elige un equipo de un campeonato dentro de un rango de nivel (strength),
 // para ofrecer un salto lateral acorde: un equipo "mediano" para un piloto
 // de Moto2 a mitad de tabla, uno más top para un buen piloto de MotoGP, o
@@ -708,6 +720,24 @@ function generateMarketOffers() {
   if (!targetChamp && state.championship === "WorldSBK" && state.age <= 30 &&
       lastSeason && (lastSeason.cg >= 1 || lastSeason.pos <= 2)) {
     targetChamp = "MotoGP";
+  }
+
+  // Ascenso desde un campeonato NACIONAL (ESBK/BSB/CIV): un Top 1 o Top 2
+  // es un resultado excepcional que, por sí solo, abre la puerta de vuelta
+  // a los campeonatos internacionales — no hace falta esperar ningún
+  // tiempo "mínimo" en la categoría, es justo la vía de segunda
+  // oportunidad. Lo normal es que la oferta sea de WorldSBK (garantizada);
+  // si además el piloto es joven y con margen real de mejora (potencial
+  // alto, algo que el jugador nunca ve directamente), también cabe la
+  // posibilidad de que le llegue una oportunidad en Supersport.
+  let nationalPromoWsbk = null;
+  let nationalPromoSsp = null;
+  if (NATIONAL_CHAMPS.includes(state.championship) && lastSeason && lastSeason.pos <= 2) {
+    nationalPromoWsbk = { team: pickTeamByStrength("WorldSBK", 69, 78), championship: "WorldSBK" };
+    const youngWithPotential = state.age <= 27 && state.potential >= 85;
+    if (youngWithPotential && Math.random() < 0.35) {
+      nationalPromoSsp = { team: pickTeamByStrength("Supersport", 70, 76), championship: "Supersport" };
+    }
   }
 
   // Salida lateral a WorldSBK: dos vías distintas.
@@ -802,6 +832,12 @@ function generateMarketOffers() {
   const seasonsStuck4 = (state.seasonsInChamp || 0) >= 4;
   const outsideTop10Recently = state.history.length >= 2 &&
     state.history.slice(-2).every((s) => s.championship === state.championship && s.pos > 10);
+  // 3 temporadas SEGUIDAS fuera del Top 10 en WorldSBK, sin importar la
+  // edad: motivo suficiente por sí solo para GARANTIZAR como mínimo una
+  // oferta de un campeonato nacional (antes esto solo se activaba a partir
+  // de los 33-34 años, ver worldSbkCareerFading justo debajo).
+  const outsideTop10For3 = state.championship === "WorldSBK" && state.history.length >= 3 &&
+    state.history.slice(-3).every((s) => s.championship === "WorldSBK" && s.pos > 10);
   const ageGate24_25 = state.age >= 25 || (state.age === 24 && Math.random() < 0.5);
   const ageGate33_34 = state.age >= 34 || (state.age === 33 && Math.random() < 0.5);
   const stuckWithoutPromotion =
@@ -814,7 +850,11 @@ function generateMarketOffers() {
     state.championship === "WorldSBK" && ageGate33_34 && outsideTop10Recently;
 
   let nationalPicks = [];
-  if (stuckWithoutPromotion || supersportDeadEnd || worldSbkCareerFading) {
+  if (outsideTop10For3) {
+    // Garantizado: como mínimo 1, nunca 0 (a diferencia de las otras vías).
+    nationalPicks = pickNationalOffers(55, 70, true);
+    if (nationalPicks.length === 0) nationalPicks = [pickGuaranteedNationalOffer(55, 70)];
+  } else if (stuckWithoutPromotion || supersportDeadEnd || worldSbkCareerFading) {
     nationalPicks = pickNationalOffers(55, 70);
   }
 
@@ -832,6 +872,8 @@ function generateMarketOffers() {
   }
   if (wsbkPick) picks.push(wsbkPick);
   if (sspPick) picks.push(sspPick);
+  if (nationalPromoWsbk) picks.push(nationalPromoWsbk);
+  if (nationalPromoSsp) picks.push(nationalPromoSsp);
   if (sspToMoto2Pick) picks.push(sspToMoto2Pick);
   if (spbToMoto3Pick) picks.push(spbToMoto3Pick);
   if (demotionPick) picks.push(demotionPick);
@@ -960,7 +1002,13 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged) {
     ? clamp(1 - Math.abs(ageDist) / 12, 0, 1) * 0.45
     : -clamp(ageDist / 8, 0, 1) * 0.5;
   const post30Penalty = state.age >= 30 ? -clamp((state.age - 29) * 0.4, 0, 3.5) : 0;
-  const ageFactor = personalAgeFactor + post30Penalty;
+  // AJUSTE CAMPEONATOS NACIONALES: en ESBK/BSB/CIV el nivel físico exigido
+  // es menor y los pilotos se mantienen competitivos mucho más tiempo. A
+  // partir de los 34-35 años, el declive por edad se reduce a menos de la
+  // mitad respecto a MotoGP o WorldSBK — no desaparece del todo (siguen
+  // siendo veteranos), pero cae mucho más despacio.
+  const nationalAgeRelief = NATIONAL_CHAMPS.includes(state.championship) && state.age >= 34 ? 0.4 : 1;
+  const ageFactor = personalAgeFactor + post30Penalty * nationalAgeRelief;
 
   // 3. Resultados deportivos — pesan, pero no deciden por sí solos.
   let perfFactor = (perfRatio - 0.22) * 3;
@@ -1171,7 +1219,7 @@ function simulateSeason(categoryChanged = false) {
 
   saveState();
 
-  if (state.age > MAX_AGE) {
+  if (state.age > (NATIONAL_CHAMPS.includes(state.championship) ? MAX_AGE_NATIONAL : MAX_AGE)) {
     retireCareer();
   } else {
     renderDashboard(true);
