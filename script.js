@@ -167,41 +167,42 @@ function buildCountryGrid(filter = "") {
 $("#input-search-country").addEventListener("input", (e) => buildCountryGrid(e.target.value));
 $("#btn-back-identidad").addEventListener("click", () => showScreen("screen-identidad"));
 
-// Probabilidad de debutar directamente en SportBike en vez de en Moto3. La
-// vía de entrada "por defecto" a la carrera sigue siendo Moto3, pero una
-// minoría de pilotos empieza en la escalera de Superbikes desde su
-// categoría de entrada — igual que en la realidad no todo el mundo debuta
-// en el Mundial de motos.
-const STARTING_CHAMP_SPORTBIKE_CHANCE = 0.15;
-function pickStartingChampionship() {
-  return Math.random() < STARTING_CHAMP_SPORTBIKE_CHANCE ? "SportBike" : "Moto3";
-}
-
 $("#btn-to-debut").addEventListener("click", () => {
-  draft.startChamp = pickStartingChampionship();
   buildDebutOffers();
   showScreen("screen-debut");
 });
 
 // ============================================================
-// PANTALLA 3: DEBUT — primeras 3 ofertas de la categoría de entrada
-// (Moto3 lo más habitual; a veces SportBike, ver pickStartingChampionship)
+// PANTALLA 3: DEBUT — primeras 3 ofertas, mezclando Moto3 y SportBike
+// Cada una de las 3 ofertas se sortea POR SEPARADO entre las dos
+// categorías (no las 3 de golpe), para que en la pantalla salgan
+// mezcladas en vez de "las 3 de Moto3" o "las 3 de SportBike". A la
+// larga, sobre muchas partidas, ronda el 70-75% Moto3 / 25-30% SportBike.
 // ============================================================
+const DEBUT_MOTO3_CHANCE = 0.73;
+
 function buildDebutOffers() {
-  const champ = draft.startChamp || "Moto3";
   $("#debut-subtitle").textContent =
-    `Tienes 16 años. Estos equipos de ${champ} quieren ficharte. Elige tu primer equipo.`;
+    "Tienes 16 años. Estos equipos quieren ficharte. Elige tu primer equipo.";
 
   const wrap = $("#debut-offers");
   wrap.innerHTML = "";
-  const pool = [...TEAMS[champ]].sort(() => Math.random() - 0.5).slice(0, 3);
-  pool.forEach((team) => {
+
+  const moto3Pool = [...TEAMS.Moto3].sort(() => Math.random() - 0.5);
+  const spbPool = [...TEAMS.SportBike].sort(() => Math.random() - 0.5);
+
+  for (let i = 0; i < 3; i++) {
+    const champ = Math.random() < DEBUT_MOTO3_CHANCE ? "Moto3" : "SportBike";
+    const pool = champ === "Moto3" ? moto3Pool : spbPool;
+    const team = pool.shift();
+    if (!team) continue; // red de seguridad, no debería vaciarse con solo 3 ofertas
+
     const card = document.createElement("div");
     card.className = "offer-card";
     card.innerHTML = offerCardHTML(team, champ);
     card.addEventListener("click", () => startCareer(team, champ));
     wrap.appendChild(card);
-  });
+  }
 }
 
 function offerCardHTML(team, champ) {
