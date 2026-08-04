@@ -106,19 +106,19 @@ const TEAMS = {
   // (Yamaha / Honda / Kawasaki + nombre del campeonato); las vías de acceso
   // y salida hacia el resto de categorías se definirán más adelante.
   ESBK: [
-    { name: "BMW EasyRace Team",   strength: 60, color: "#21409a", logo: "BMW"   },
-    { name: "Team Honda Laglisse",    strength: 63, color: "#cc1517", logo: "Honda"    },
-    { name: "Kawasaki JDO Racing Team", strength: 61, color: "#59c84a", logo: "Kawasaki" },
+    { name: "BMW EasyRace Team",   strength: 60, color: "#171536", logo: "EasyRace"   },
+    { name: "Team Honda Laglisse",    strength: 63, color: "#cc1517", logo: "Laglisse"    },
+    { name: "Kawasaki JDO Racing Team", strength: 61, color: "#59c84a", logo: "JDO" },
   ],
   BSB: [
-    { name: "Yamaha BSB",   strength: 66, color: "#21409a", logo: "Yamaha"   },
-    { name: "Honda BSB",    strength: 64, color: "#cc1517", logo: "Honda"    },
-    { name: "Kawasaki BSB", strength: 62, color: "#59c84a", logo: "Kawasaki" },
+    { name: "McAMS Yamaha",   strength: 66, color: "#21409a", logo: "McAms"   },
+    { name: "Nitrous Competitions Racing Ducati",    strength: 64, color: "#ee332e", logo: "Nitrous"    },
+    { name: "Hager PBM Racing Team", strength: 62, color: "#ff2f00", logo: "PBM" },
   ],
   CIV: [
-    { name: "Yamaha CIV SBK",   strength: 64, color: "#21409a", logo: "Yamaha"   },
-    { name: "Honda CIV SBK",    strength: 62, color: "#cc1517", logo: "Honda"    },
-    { name: "Kawasaki CIV SBK", strength: 60, color: "#59c84a", logo: "Kawasaki" },
+    { name: "Broncos Racing Team",   strength: 64, color: "#ff2f00", logo: "Broncos"   },
+    { name: "Barni Racing Team",    strength: 62, color: "#d50005", logo: "Barni"        },
+    { name: "DMR Racing Yamaha", strength: 60, color: "#21409a", logo: "DMR" },
   ],
   // Escalón de entrada a la escalera de Superbikes, por debajo de
   // Supersport — el equivalente, en esa escalera, a lo que Moto3 es para
