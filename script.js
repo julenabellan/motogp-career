@@ -511,9 +511,10 @@ function renderMarket() {
     : `${state.team.name} no ha renovado tu contrato — elige tu nuevo equipo para la temporada`;
   $("#market-hint").classList.toggle("market-hint-warning", !renewed);
 
-  offers.forEach((o) => {
+  offers.forEach((o, i) => {
     const card = document.createElement("div");
-    card.className = "offer-card" + (o.isCurrent ? " current" : "");
+    card.className = "offer-card card-enter" + (o.isCurrent ? " current" : "");
+    card.style.animationDelay = (i * 90) + "ms";
     card.innerHTML = offerCardHTML(o.team, o.championship);
     // Elegir un equipo ficha para la próxima temporada Y la simula al momento,
     // pero primero se ve un pequeño gesto visual: la tarjeta elegida se marca
@@ -533,12 +534,14 @@ function renderMarket() {
         simulateSeason(categoryChanged);
       }, 900);
     });
+    card.addEventListener("animationend", () => card.classList.remove("card-enter"), { once: true });
     wrap.appendChild(card);
   });
 
   if (state.age >= RETIRE_MIN_AGE) {
     const retireCard = document.createElement("div");
-    retireCard.className = "offer-card retire-option";
+    retireCard.className = "offer-card retire-option card-enter";
+    retireCard.style.animationDelay = (offers.length * 90) + "ms";
     retireCard.innerHTML = `
       <div class="offer-top">
         <span class="offer-team-name">Retirarme</span>
@@ -548,6 +551,7 @@ function renderMarket() {
     retireCard.addEventListener("click", () => {
       showConfirm("¿Seguro que quieres retirarte y terminar tu carrera aquí?", () => retireCareer());
     });
+    retireCard.addEventListener("animationend", () => retireCard.classList.remove("card-enter"), { once: true });
     wrap.appendChild(retireCard);
   }
 }
