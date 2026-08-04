@@ -1347,12 +1347,14 @@ function retireCareer() {
   }, { cg: 0, pod: 0, pol: 0, titles: 0 });
 
   // Desglose de títulos por campeonato (solo se listan los que tienen al
-  // menos 1), en el orden habitual de la escalera de categorías.
+  // menos 1), en el orden habitual de la escalera de categorías. Incluye
+  // los campeonatos nacionales (ESBK/BSB/CIV) — antes se quedaban fuera de
+  // esta lista aunque sí sumaban al recuento total de arriba.
   const titlesByChamp = {};
   h.forEach((s) => {
     if (s.pos === 1) titlesByChamp[s.championship] = (titlesByChamp[s.championship] || 0) + 1;
   });
-  const CHAMP_ORDER = ["SportBike", "Moto3", "Supersport", "Moto2", "WorldSBK", "MotoGP"];
+  const CHAMP_ORDER = ["SportBike", "Moto3", "Supersport", "Moto2", "ESBK", "BSB", "CIV", "WorldSBK", "MotoGP"];
   const titlesBreakdown = CHAMP_ORDER
     .filter((c) => titlesByChamp[c])
     .map((c) => `${c}: ${titlesByChamp[c]}`)
