@@ -405,10 +405,10 @@ function renderDashboard(justSimulated = false) {
   // de "Títulos" se enmarca en dorado un momento mientras el número sube,
   // y el marco se desvanece solo después.
   if (state.justWonChampionship) {
-    const block = $("#titles-stat-block");
-    block.classList.remove("title-flash");
-    void block.offsetWidth; // fuerza el reflow para poder reiniciar la animación
-    block.classList.add("title-flash");
+    const titlesNum = $("#rider-titles");
+    titlesNum.classList.remove("title-flash");
+    void titlesNum.offsetWidth; // fuerza el reflow para poder reiniciar la animación
+    titlesNum.classList.add("title-flash");
     state.justWonChampionship = null;
     saveState();
   }
