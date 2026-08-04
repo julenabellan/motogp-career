@@ -20,9 +20,9 @@ const FIELD = {
   // Campeonatos nacionales de Superbike: nivel de pelotón por debajo de
   // WorldSBK, vía alternativa para pilotos que no llegan (o no se
   // mantienen) en los campeonatos superiores.
-  ESBK:       { mean: 62, sd: 12 },
+  ESBK:       { mean: 60, sd: 12 },
   BSB:        { mean: 63, sd: 12 },
-  CIV:        { mean: 61, sd: 12 },
+  CIV:        { mean: 59, sd: 12 },
 };
 const GRID_RIVALS = 23; // resto de la parrilla (24 pilotos en total en el campeonato)
 
