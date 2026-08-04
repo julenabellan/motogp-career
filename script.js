@@ -34,7 +34,7 @@ const FIELD = {
   // AJUSTE (4ª pasada): un pelín menos exigente en general, no solo el
   // año de estreno — de 58 a 57. AJUSTE (5ª pasada): +1 de vuelta, para
   // que el salto posterior a Moto2/Supersport no sea tan brusco — 57 → 58.
-  Moto3:      { mean: 58, sd: 13 },
+  Moto3:      { mean: 59, sd: 13 }, // AJUSTE (9ª pasada): +1 más
   Moto2:      { mean: 68, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
   SportBike:  { mean: 54, sd: 13 },
@@ -1262,7 +1262,14 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // estaba quedando un poco corto. AJUSTE (4ª pasada): +2 → +3.
   const isMoto3RookieSeason = categoryChanged && state.championship === "Moto3" &&
     JUNIOR_CHAMPS.includes(previousChampionship);
-  const playerRating = state.ovr * w.rider + state.team.strength * w.team + (isMoto3RookieSeason ? 3 : 0);
+  // AJUSTE (9ª pasada): el salto de Moto3 a Moto2 costaba demasiado,
+  // sobre todo el primer año — mismo empujón de forma (+3) que el estreno
+  // en Moto3, pero SIN tocar el nivel de la categoría (FIELD.Moto2 se
+  // queda igual).
+  const isMoto2RookieSeason = categoryChanged && state.championship === "Moto2" &&
+    previousChampionship === "Moto3";
+  const playerRating = state.ovr * w.rider + state.team.strength * w.team +
+    (isMoto3RookieSeason ? 3 : 0) + (isMoto2RookieSeason ? 3 : 0);
 
   // Nivel base de cada rival para toda la temporada (su sitio dentro del
   // pelotón), heredado (con una ligera deriva) de la temporada anterior.
@@ -1315,8 +1322,8 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
       let demoteChance = (state.championship === "Moto2" || state.championship === "Moto3") ? 0.4 : 0.55;
       // AJUSTE (3ª pasada): en el estreno en Moto3 tras la fase júnior,
       // un pelín menos propenso a que una victoria "de mérito" se rebaje
-      // a podio.
-      if (isMoto3RookieSeason) demoteChance -= 0.05;
+      // a podio. AJUSTE (9ª pasada): mismo trato para el estreno en Moto2.
+      if (isMoto3RookieSeason || isMoto2RookieSeason) demoteChance -= 0.05;
       if (Math.random() < demoteChance) {
         const winner = finishers.shift();
         finishers.splice(1, 0, winner);
@@ -1355,9 +1362,10 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // específicamente en el estreno en Moto3 tras la fase júnior — un poco
   // menos de probabilidad de recortar el resultado (el rango de
   // "consuelo", 4º-9º, se mantiene igual). AJUSTE (4ª pasada): un pelín
-  // más, 0.80/0.75 → 0.77/0.72.
-  const champDampChance = isMoto3RookieSeason ? 0.77 : 0.85;
-  const top3DampChance = isMoto3RookieSeason ? 0.72 : 0.80;
+  // más, 0.80/0.75 → 0.77/0.72. AJUSTE (9ª pasada): mismo trato para el
+  // estreno en Moto2 tras Moto3.
+  const champDampChance = (isMoto3RookieSeason || isMoto2RookieSeason) ? 0.77 : 0.85;
+  const top3DampChance = (isMoto3RookieSeason || isMoto2RookieSeason) ? 0.72 : 0.80;
   const top3DampRange = [4, 9];
   if (isRookieSeason && champPosition === 1 && Math.random() < champDampChance) {
     champPosition = randInt(2, 3);
