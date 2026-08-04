@@ -58,8 +58,8 @@ const TEAMS = {
     { name: "KTM Junior Team",                    strength: 44, color: "#ea5d24", logo: "Ktm"             },
     { name: "Honda Asia Junior Team",            strength: 43, color: "#cc1517", logo: "HondaAsia"      },
     { name: "MTA Junior Team",                     strength: 42, color: "#ca2c23", logo: "MTA"            },
-    { name: "Team Laglisse",                   strength: 41, color: "#cc1517", logo: "Laglisse"            },
-    { name: "Momoven Racing Junior Team",                strength: 43, color: "#ff6500", logo: "Momoven"        },
+    { name: "Team Laglisse",                   strength: 42, color: "#cc1517", logo: "Laglisse"            },
+    { name: "Momoven Racing Junior Team",                strength: 44, color: "#ff6500", logo: "Momoven"        },
   ],
   RedBullRookies: [
     { name: "Red Bull Rookies Cup",               strength: 42, color: "#0b1f6e", logo: "RedBullRookies" },
