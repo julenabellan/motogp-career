@@ -53,13 +53,13 @@ const TEAMS = {
   // influir en el resultado (ver CATEGORY_WEIGHTS en script.js).
   // ----------------------------------------------------------------
   MotoJunior: [
-    { name: "Estrella Galicia 0,0",              strength: 46, color: "#1DB954", logo: "EstrellaGalicia" },
+    { name: "Estrella Galicia 0,0 Monlau",              strength: 46, color: "#1DB954", logo: "EstrellaGalicia" },
     { name: "Aspar Junior Team",                  strength: 45, color: "#0199b1", logo: "ASPAR"           },
     { name: "KTM Junior Team",                    strength: 44, color: "#ea5d24", logo: "Ktm"             },
-    { name: "Honda Talent Junior Team",            strength: 43, color: "#cc1517", logo: "HondaAsia"      },
+    { name: "Honda Asia Junior Team",            strength: 43, color: "#cc1517", logo: "HondaAsia"      },
     { name: "MTA Junior Team",                     strength: 42, color: "#ca2c23", logo: "MTA"            },
-    { name: "CIP Green Power Junior",             strength: 41, color: "#12a236", logo: "CIP"            },
-    { name: "SNIPERS Junior Team",                strength: 40, color: "#f9eb1d", logo: "SNIPERS"        },
+    { name: "Team Laglisse",                   strength: 41, color: "#cc1517", logo: "Laglisse"            },
+    { name: "Momoven Racing Junior Team",                strength: 43, color: "#ff6500", logo: "Momoven"        },
   ],
   RedBullRookies: [
     { name: "Red Bull Rookies Cup",               strength: 42, color: "#0b1f6e", logo: "RedBullRookies" },
