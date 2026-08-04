@@ -393,9 +393,9 @@ function startCareer(team, champ = "MotoJunior") {
   // con el impulso extra de "room" al estar tan lejos del potencial y el
   // bonus de 16-18 años) lo devuelva a un nivel similar al que antes tenía
   // al debutar directamente en Moto3 — es una fase de desarrollo, no un
-  // retraso de la progresión. AJUSTE (pizca): rango un pelín más alto de
-  // lo inicial, para que llegar a tiempo sea un poco más asequible.
-  const initialOvr = randInt(40, 50);
+  // retraso de la progresión. AJUSTE (2ª pasada): mínimo subido a 44 para
+  // que la media de partida a los 16 años sea un poco más alta.
+  const initialOvr = randInt(44, 52);
   const hiddenProfile = generateHiddenProfile();
   state = {
     rider: {
