@@ -1067,21 +1067,46 @@ function getCareerTeams() {
   return teams;
 }
 
+// Estadísticas agregadas por cada equipo a lo largo de toda la carrera —
+// carreras ganadas, podios y títulos conseguidos con ese equipo — en el
+// orden en que se ficharon por primera vez (deduplicados por nombre, igual
+// que hacía antes getCareerTeams).
+function getCareerTeamStats() {
+  const map = new Map();
+  state.history.forEach((s) => {
+    if (!map.has(s.team)) {
+      map.set(s.team, { name: s.team, championship: s.championship, cg: 0, pod: 0, titles: 0 });
+    }
+    const t = map.get(s.team);
+    t.cg += s.cg;
+    t.pod += s.pod;
+    if (s.pos === 1) t.titles += 1;
+  });
+  return Array.from(map.values());
+}
+
 function renderCareerTeamsList(containerSelector) {
-  const teams = getCareerTeams();
+  const teams = getCareerTeamStats();
   $(containerSelector).innerHTML = teams.map((t) => {
     const logo = teamLogo(t.name, t.championship);
     const color = teamColor(t.name, t.championship);
+    const initial = t.name.trim().charAt(0).toUpperCase();
     const logoHTML = logo
-      ? `<img class="retire-team-logo" src="${logo}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">`
+      ? `<img class="retiro-team-logo" src="${logo}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">`
       : "";
     return `
-      <div class="retire-team-chip">
-        <span class="retire-team-visual">
+      <div class="retiro-team-card">
+        <span class="retiro-team-badge">${t.championship}</span>
+        <div class="retiro-team-visual">
           ${logoHTML}
-          <span class="retire-team-dot" style="background:${color}; display:${logo ? "none" : "block"};"></span>
-        </span>
-        <span class="retire-team-name">${t.name}</span>
+          <div class="retiro-team-fallback" style="background:${color}; display:${logo ? "none" : "flex"};">${initial}</div>
+        </div>
+        <span class="retiro-team-name">${t.name}</span>
+        <div class="retiro-team-stats-row">
+          <span class="retiro-team-stat" title="Carreras ganadas">🏆<span>${t.cg}</span></span>
+          <span class="retiro-team-stat" title="Podios">🥇<span>${t.pod}</span></span>
+          <span class="retiro-team-stat" title="Títulos">👑<span>${t.titles || "—"}</span></span>
+        </div>
       </div>
     `;
   }).join("");
@@ -1089,29 +1114,89 @@ function renderCareerTeamsList(containerSelector) {
 
 function retireCareer() {
   const h = state.history;
+  const seasons = h.length;
+
   const totals = h.reduce((acc, s) => {
     acc.cg += s.cg; acc.pod += s.pod; acc.pol += s.pol;
     if (s.pos === 1) acc.titles += 1;
     return acc;
   }, { cg: 0, pod: 0, pol: 0, titles: 0 });
 
-  const peakOvr = h.length ? Math.max(...h.map((s) => s.ovr), state.ovr) : state.ovr;
-  const bestPos = h.length ? Math.min(...h.map((s) => s.pos)) : null;
-  const lastAge = h.length ? h[h.length - 1].age : state.age;
-  const lastChamp = h.length ? h[h.length - 1].championship : state.championship;
+  // Desglose de títulos por campeonato (solo se listan los que tienen al
+  // menos 1), en el orden habitual de la escalera de categorías.
+  const titlesByChamp = {};
+  h.forEach((s) => {
+    if (s.pos === 1) titlesByChamp[s.championship] = (titlesByChamp[s.championship] || 0) + 1;
+  });
+  const CHAMP_ORDER = ["SportBike", "Moto3", "Supersport", "Moto2", "WorldSBK", "MotoGP"];
+  const titlesBreakdown = CHAMP_ORDER
+    .filter((c) => titlesByChamp[c])
+    .map((c) => `${c}: ${titlesByChamp[c]}`)
+    .join("   ");
 
+  // Mejor posición de campeonato conseguida, y en qué temporada.
+  let bestPos = null, bestPosSeason = null;
+  h.forEach((s, idx) => {
+    if (bestPos === null || s.pos < bestPos) { bestPos = s.pos; bestPosSeason = idx + 1; }
+  });
+
+  // OVR máximo alcanzado y en qué temporada. `s.ovr` es el OVR al INICIO
+  // de esa temporada, así que el pico real puede estar en state.ovr (ya
+  // con el crecimiento de la última temporada disputada aplicado).
+  let peakOvr = state.ovr, peakOvrSeason = seasons || 1;
+  h.forEach((s, idx) => {
+    if (s.ovr > peakOvr) { peakOvr = s.ovr; peakOvrSeason = idx + 1; }
+  });
+
+  const lastAge = seasons ? h[seasons - 1].age : state.age;
+  const lastChamp = seasons ? h[seasons - 1].championship : state.championship;
+  const avg = (total) => (seasons ? (total / seasons).toFixed(1) : "0.0");
+
+  // ---------- Cabecera: temporadas / edad / OVR final ----------
+  $("#retiro-mini-seasons").textContent = seasons;
+  $("#retiro-mini-age").textContent = lastAge;
+  $("#retiro-mini-ovr").textContent = state.ovr;
+  $("#retiro-ovr-box").style.background = ovrColor(state.ovr);
+
+  // ---------- Hero: nombre y subtítulo ----------
+  $("#retiro-rider-name").textContent = state.rider.apellido || "PILOTO";
   $("#retiro-subtitle").textContent =
-    `${state.rider.apellido} se retira a los ${lastAge} años, tras ${h.length} temporada${h.length === 1 ? "" : "s"} como profesional, compitiendo en ${lastChamp}.`;
+    `${seasons} temporada${seasons === 1 ? "" : "s"} como profesional, compitiendo en ${lastChamp}.`;
 
+  // ---------- Grid de 6 estadísticas ----------
   $("#retire-stats").innerHTML = `
-    <div class="retire-stat"><span class="label">🏆 Carreras ganadas</span><span class="value">${totals.cg}</span></div>
-    <div class="retire-stat"><span class="label">🥈 Podios</span><span class="value">${totals.pod}</span></div>
-    <div class="retire-stat"><span class="label">⚡ Poles</span><span class="value">${totals.pol}</span></div>
-    <div class="retire-stat"><span class="label">👑 Títulos de campeón</span><span class="value">${totals.titles}</span></div>
-    <div class="retire-stat"><span class="label">📊 Mejor posición</span><span class="value">${bestPos ?? "—"}º</span></div>
-    <div class="retire-stat"><span class="label">📈 OVR máximo</span><span class="value">${peakOvr}</span></div>
-    <div class="retire-stat"><span class="label">🏁 Temporadas</span><span class="value">${h.length}</span></div>
+    <div class="retiro-stat-card">
+      <div class="retiro-stat-head">🏆<span>Carreras ganadas</span></div>
+      <div class="retiro-stat-value">${totals.cg}</div>
+      <div class="retiro-stat-sub">Promedio: ${avg(totals.cg)} / temporada</div>
+    </div>
+    <div class="retiro-stat-card">
+      <div class="retiro-stat-head">🥇<span>Podios</span></div>
+      <div class="retiro-stat-value">${totals.pod}</div>
+      <div class="retiro-stat-sub">Promedio: ${avg(totals.pod)} / temporada</div>
+    </div>
+    <div class="retiro-stat-card">
+      <div class="retiro-stat-head">⚡<span>Poles</span></div>
+      <div class="retiro-stat-value">${totals.pol}</div>
+      <div class="retiro-stat-sub">Promedio: ${avg(totals.pol)} / temporada</div>
+    </div>
+    <div class="retiro-stat-card">
+      <div class="retiro-stat-head">👑<span>Títulos</span></div>
+      <div class="retiro-stat-value">${totals.titles}</div>
+      <div class="retiro-stat-sub">${titlesBreakdown || "—"}</div>
+    </div>
+    <div class="retiro-stat-card">
+      <div class="retiro-stat-head">🏁<span>Mejor posición</span></div>
+      <div class="retiro-stat-value">${bestPos ?? "—"}º</div>
+      <div class="retiro-stat-sub">${bestPosSeason ? `Temporada ${bestPosSeason}` : "—"}</div>
+    </div>
+    <div class="retiro-stat-card">
+      <div class="retiro-stat-head">📈<span>OVR máximo</span></div>
+      <div class="retiro-stat-value">${peakOvr}</div>
+      <div class="retiro-stat-sub">Temporada ${peakOvrSeason}</div>
+    </div>
   `;
+
   renderCareerTeamsList("#retire-teams");
 
   localStorage.removeItem(STORAGE_KEY);
