@@ -1130,6 +1130,12 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   const highOvrWall = state.ovr >= 85 ? clamp(1 - (state.ovr - 85) / 10, 0.15, 1) : 1;
   base *= highOvrWall;
 
+  // AJUSTE (8ª pasada): Moto2 y Supersport cuestan bastante más de lo que
+  // deberían — sin tocar el nivel de esas categorías (FIELD), se sube un
+  // pelín el ritmo de progresión del piloto específicamente ahí. Poco,
+  // solo un empujón, no una barbaridad.
+  if (state.championship === "Moto2" || state.championship === "Supersport") base *= 1.12;
+
   // 1b. Impulso de novato: los primeros años en Moto3 (16-18 años) suelen
   // ser de aprendizaje muy rápido en la vida real — se nota incluso en los
   // pilotos de progresión más lenta. Se difumina hacia los 20.
