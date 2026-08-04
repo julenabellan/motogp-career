@@ -17,15 +17,20 @@ const MAX_AGE_NATIONAL = 41;
 const FIELD = {
   // Fase de formación (16-17 años, antes de Moto3/SportBike): pelotón más
   // flojo y todavía muy irregular — es la primera parrilla profesional.
-  // AJUSTE (pizca): nivel medio un pelín más bajo de lo inicial, para que
-  // llegar preparado a los 18 años sea un poco más asequible, sin que se
-  // note apenas.
-  MotoJunior:      { mean: 43, sd: 14 },
-  RedBullRookies:  { mean: 45, sd: 14 },
-  YamahaR3Cup:     { mean: 38, sd: 14 },
+  // AJUSTE (5ª pasada): con la fase júnior de por medio, el piloto llegaba
+  // a Moto3 (y de ahí a Moto2/Supersport) con menos nivel medio que antes
+  // de que existiera esta fase, complicando el resto de la escalera de
+  // rebote. Se sube un poco el nivel de las categorías júnior (más en
+  // Red Bull Rookies, que es la más competitiva de las tres) para que la
+  // progresión sean más "escalones" pequeños y no un pozo en medio de la
+  // carrera.
+  MotoJunior:      { mean: 45, sd: 14 },
+  RedBullRookies:  { mean: 48, sd: 14 },
+  YamahaR3Cup:     { mean: 41, sd: 14 },
   // AJUSTE (4ª pasada): un pelín menos exigente en general, no solo el
-  // año de estreno — de 58 a 57.
-  Moto3:      { mean: 57, sd: 13 },
+  // año de estreno — de 58 a 57. AJUSTE (5ª pasada): +1 de vuelta, para
+  // que el salto posterior a Moto2/Supersport no sea tan brusco — 57 → 58.
+  Moto3:      { mean: 58, sd: 13 },
   Moto2:      { mean: 68, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
   SportBike:  { mean: 54, sd: 13 },
@@ -397,8 +402,10 @@ function startCareer(team, champ = "MotoJunior") {
   // al debutar directamente en Moto3 — es una fase de desarrollo, no un
   // retraso de la progresión. AJUSTE (2ª pasada): mínimo subido a 44 para
   // que la media de partida a los 16 años sea un poco más alta. AJUSTE
-  // (4ª pasada): subido otro pelín más, 44-52 → 46-54.
-  const initialOvr = randInt(46, 54);
+  // (4ª pasada): subido otro pelín más, 44-52 → 46-54. AJUSTE (5ª pasada):
+  // otro empujón más, 46-54 → 49-57, dentro del reajuste general de toda
+  // la escalera de categorías.
+  const initialOvr = randInt(49, 57);
   const hiddenProfile = generateHiddenProfile();
   state = {
     rider: {
@@ -784,12 +791,26 @@ function generateMarketOffers() {
 
   let targetChamp = null;
   if (lastGood && (tenureOk || (exceptional && Math.random() < 0.25) || guaranteedPromotion)) {
-    // Fase de formación: FIM JuniorGP y Red Bull Rookies Cup desembocan en
-    // Moto3; Yamaha R3 Cup desemboca en SportBike.
-    if (state.championship === "MotoJunior" || state.championship === "RedBullRookies") {
+    // Fase de formación: Red Bull Rookies Cup desemboca siempre en Moto3;
+    // Yamaha R3 Cup desemboca siempre en SportBike. FIM JuniorGP
+    // (MotoJunior) es distinta: acabar 1º-3º lleva a Moto3 con toda
+    // normalidad, pero un 4º o 5º puesto es una posición límite — ni
+    // claramente para Moto3 ni un fracaso — así que ahí se reparte por
+    // probabilidad entre Moto3, SportBike, o directamente ninguna oferta
+    // de ascenso todavía (se queda otra temporada más en JuniorGP).
+    if (state.championship === "RedBullRookies") {
       targetChamp = "Moto3";
     } else if (state.championship === "YamahaR3Cup") {
       targetChamp = "SportBike";
+    } else if (state.championship === "MotoJunior") {
+      if (lastSeason && (lastSeason.pos === 4 || lastSeason.pos === 5)) {
+        const roll = Math.random();
+        if (roll < 0.55) targetChamp = "Moto3";
+        else if (roll < 0.85) targetChamp = "SportBike";
+        // el 15% restante: sin oferta de ascenso esta temporada.
+      } else {
+        targetChamp = "Moto3";
+      }
     // Ninguna oferta de Moto2 puede llegar antes de los 18 años, por muy
     // bien que vaya la temporada — ni siquiera con un ascenso meteórico.
     } else if (state.championship === "Moto3") {
