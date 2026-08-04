@@ -1133,8 +1133,10 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // AJUSTE (8ª pasada): Moto2 y Supersport cuestan bastante más de lo que
   // deberían — sin tocar el nivel de esas categorías (FIELD), se sube un
   // pelín el ritmo de progresión del piloto específicamente ahí. Poco,
-  // solo un empujón, no una barbaridad.
-  if (state.championship === "Moto2" || state.championship === "Supersport") base *= 1.15; // AJUSTE (10ª pasada): 1.12 → 1.15
+  // solo un empujón, no una barbaridad. AJUSTE (12ª pasada): seguían
+  // estancándose demasiadas carreras en Moto2 con el +15%, así que se
+  // sube otro escalón (1.15 → 1.30).
+  if (state.championship === "Moto2" || state.championship === "Supersport") base *= 1.30; // AJUSTE (12ª pasada): 1.15 → 1.30
 
   // 1b. Impulso de novato: los primeros años en Moto3 (16-18 años) suelen
   // ser de aprendizaje muy rápido en la vida real — se nota incluso en los
@@ -1314,7 +1316,7 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
     finishers.sort((a, b) => b.perf - a.perf);
 
     // Si hoy tocaba ganar pero el piloto no es realmente de los 3 mejores
-    // de la temporada, la mayoría de esas veces se queda en un podio (2º)
+    // de la temporada, la mayoría de esas veces se queda en podio (o cerca)
     // en vez de una victoria — ganar de verdad sigue siendo cosa de los
     // pilotos top, aunque de vez en cuando pase la sorpresa. En Moto2 y
     // Moto3 esa sorpresa es algo más frecuente (ajuste de dificultad).
@@ -1326,7 +1328,18 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
       if (isMoto3RookieSeason || isMoto2RookieSeason) demoteChance -= 0.05;
       if (Math.random() < demoteChance) {
         const winner = finishers.shift();
-        finishers.splice(1, 0, winner);
+        // FALLO CORREGIDO (12ª pasada): esto insertaba SIEMPRE al piloto
+        // justo en 2ª posición (finishers.splice(1, 0, winner)), carrera
+        // tras carrera, durante toda la temporada. Con demoteChance en
+        // 40-55% de todas las "victorias de mérito" convirtiéndose siempre
+        // en el mismo puesto exacto, el 2º puesto se acumulaba muchísimo
+        // más que el 1º o el 3º tanto en resultados de carrera como, por
+        // arrastre, en la clasificación final del campeonato. Ahora se
+        // reparte entre 2º, 3º y 4º (ponderado hacia 2º, pero sin ser
+        // siempre el mismo puesto).
+        const r = Math.random();
+        const insertAt = r < 0.5 ? 1 : r < 0.8 ? 2 : 3; // 50% 2º, 30% 3º, 20% 4º
+        finishers.splice(insertAt, 0, winner);
       }
     }
 
