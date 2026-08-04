@@ -1218,12 +1218,16 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
 
   const w = CATEGORY_WEIGHTS[state.championship] || CATEGORY_WEIGHTS.Moto3;
 
-  // AJUSTE DE DIFICULTAD: la primerísima temporada de la carrera (16 años,
-  // en la fase de formación) es un pelín más dura que el resto — el
-  // "shock" real de subirse por primera vez a una moto de competición. No
-  // afecta a temporadas posteriores, aunque impliquen cambio de categoría.
-  const isCareerDebut = state.history.length === 0;
-  const playerRating = state.ovr * w.rider + state.team.strength * w.team - (isCareerDebut ? 1 : 0);
+  // AJUSTE (3ª pasada): la primerísima temporada de la carrera (16 años,
+  // en la fase de formación) ya no resta nada al rating — antes restaba 1
+  // punto por el "shock" de la primera vez en pista; ahora es un pelín
+  // más fácil. El estreno en Moto3 recién graduado de la fase júnior suma,
+  // en cambio, un pequeño empujón de forma (+2) — aparte de todo lo que ya
+  // aporta el salto de OVR de la graduación — porque en la práctica se
+  // estaba quedando un poco corto.
+  const isMoto3RookieSeason = categoryChanged && state.championship === "Moto3" &&
+    JUNIOR_CHAMPS.includes(previousChampionship);
+  const playerRating = state.ovr * w.rider + state.team.strength * w.team + (isMoto3RookieSeason ? 2 : 0);
 
   // Nivel base de cada rival para toda la temporada (su sitio dentro del
   // pelotón), heredado (con una ligera deriva) de la temporada anterior.
@@ -1273,7 +1277,11 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
     // pilotos top, aunque de vez en cuando pase la sorpresa. En Moto2 y
     // Moto3 esa sorpresa es algo más frecuente (ajuste de dificultad).
     if (finishers[0].idx === -1 && !isTopTier) {
-      const demoteChance = (state.championship === "Moto2" || state.championship === "Moto3") ? 0.4 : 0.55;
+      let demoteChance = (state.championship === "Moto2" || state.championship === "Moto3") ? 0.4 : 0.55;
+      // AJUSTE (3ª pasada): en el estreno en Moto3 tras la fase júnior,
+      // un pelín menos propenso a que una victoria "de mérito" se rebaje
+      // a podio.
+      if (isMoto3RookieSeason) demoteChance -= 0.05;
       if (Math.random() < demoteChance) {
         const winner = finishers.shift();
         finishers.splice(1, 0, winner);
@@ -1307,7 +1315,15 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // debut sobresaliente, solo que no el título. A partir del segundo año en
   // la misma categoría la probabilidad de ser campeón queda intacta.
   const isRookieSeason = (state.seasonsInChamp || 1) === 1;
-  if (isRookieSeason && champPosition === 1 && Math.random() < 0.85) {
+  // AJUSTE (3ª pasada): el amortiguado normal de temporada de debut (85% /
+  // 80%, y un 4º-9º si no eres de los mejores) se suaviza un pelín
+  // específicamente en el estreno en Moto3 tras la fase júnior — un poco
+  // menos de probabilidad de recortar el resultado (el rango de
+  // "consuelo", 4º-9º, se mantiene igual).
+  const champDampChance = isMoto3RookieSeason ? 0.80 : 0.85;
+  const top3DampChance = isMoto3RookieSeason ? 0.75 : 0.80;
+  const top3DampRange = [4, 9];
+  if (isRookieSeason && champPosition === 1 && Math.random() < champDampChance) {
     champPosition = randInt(2, 3);
   }
 
@@ -1315,11 +1331,11 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // los mejores del pelotón esa temporada (ver isTopTier, calculado antes
   // de disputar las carreras) rara vez debe firmar una temporada de debut
   // entre los 3 primeros solo por el azar del campeonato — eso hay que
-  // ganárselo siendo un piloto top. La mayoría de esas veces (80%) el
-  // resultado se "amortigua" a una posición más realista para un
-  // debutante (4º-9º), aunque la temporada siga contando como sólida.
-  if (isRookieSeason && champPosition <= 3 && !isTopTier && Math.random() < 0.80) {
-    champPosition = randInt(4, 9);
+  // ganárselo siendo un piloto top. La mayoría de esas veces el resultado
+  // se "amortigua" a una posición más realista para un debutante, aunque
+  // la temporada siga contando como sólida.
+  if (isRookieSeason && champPosition <= 3 && !isTopTier && Math.random() < top3DampChance) {
+    champPosition = randInt(top3DampRange[0], top3DampRange[1]);
   }
 
   const isChampion = champPosition === 1;
