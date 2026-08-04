@@ -17,6 +17,12 @@ const FIELD = {
   SportBike:  { mean: 54, sd: 13 },
   Supersport: { mean: 64, sd: 12 },
   WorldSBK:   { mean: 75, sd: 11 },
+  // Campeonatos nacionales de Superbike: nivel de pelotón por debajo de
+  // WorldSBK, vía alternativa para pilotos que no llegan (o no se
+  // mantienen) en los campeonatos superiores.
+  ESBK:       { mean: 62, sd: 12 },
+  BSB:        { mean: 63, sd: 12 },
+  CIV:        { mean: 61, sd: 12 },
 };
 const GRID_RIVALS = 23; // resto de la parrilla (24 pilotos en total en el campeonato)
 
@@ -614,6 +620,22 @@ const LATERAL_LADDER = {
   MotoGP: "WorldSBK", WorldSBK: "MotoGP",
 };
 
+// Campeonatos nacionales de Superbike (por debajo de WorldSBK). Cuando
+// lleguen ofertas de esta vía, nunca deben aparecer los 3 a la vez: como
+// mucho 2, y también puede no llegar ninguna. Las condiciones exactas para
+// que se ofrezcan (desde qué categoría, con qué rendimiento) están
+// pendientes de definir — este helper ya deja lista la selección de
+// cuántos y cuáles ofrecer en cuanto se conecte a generateMarketOffers().
+const NATIONAL_CHAMPS = ["ESBK", "BSB", "CIV"];
+function pickNationalOffers(minStrength, maxStrength) {
+  const howMany = [0, 1, 1, 2][randInt(0, 3)]; // 0 o 1 lo más habitual, 2 más raro
+  const chosen = [...NATIONAL_CHAMPS].sort(() => Math.random() - 0.5).slice(0, howMany);
+  return chosen.map((champ) => ({
+    team: pickTeamByStrength(champ, minStrength, maxStrength),
+    championship: champ,
+  }));
+}
+
 // Elige un equipo de un campeonato dentro de un rango de nivel (strength),
 // para ofrecer un salto lateral acorde: un equipo "mediano" para un piloto
 // de Moto2 a mitad de tabla, uno más top para un buen piloto de MotoGP, o
@@ -857,6 +879,9 @@ const CATEGORY_WEIGHTS = {
   SportBike:  { rider: 0.84, team: 0.16 },
   Supersport: { rider: 0.79, team: 0.21 },
   WorldSBK:   { rider: 0.72, team: 0.28 },
+  ESBK:       { rider: 0.81, team: 0.19 },
+  BSB:        { rider: 0.81, team: 0.19 },
+  CIV:        { rider: 0.81, team: 0.19 },
 };
 
 // ------------------------------------------------------------
