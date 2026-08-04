@@ -107,10 +107,11 @@ const TEAMS = {
     { name: "MTM Kawasaki",              strength: 53, color: "#00A352", logo: "MTM"        },
     { name: "ARCO Yamaha",               strength: 52, color: "#0033A0", logo: "ArcoYamaha" },
     { name: "Prodina Kawasaki",          strength: 51, color: "#009444", logo: "Prodina"    },
-    { name: "VLR Racing Suzuki",         strength: 50, color: "#003399", logo: "VLRsuzuki"  },
+    { name: "VLR Racing Suzuki",         strength: 50, color: "#10529d", logo: "VLRsuzuki"  },
     { name: "Revo M2 Aprilia",           strength: 49, color: "#5C6670", logo: "RevoM2"     },
     { name: "MMR Aprilia",               strength: 48, color: "#3B3B3B", logo: "MMR"        },
     { name: "Kove Racing Team 109",      strength: 46, color: "#FF4500", logo: "Kove"       },
+    { name: "Wixx Racing Suzuki",      strength: 22, color: "#ce0012", logo: "WixxSuzuki"       },
   ],
 };
 
