@@ -988,7 +988,7 @@ function simulateSeason(categoryChanged = false) {
   // Gran Premio. No afecta a un regreso posterior a Moto3 tras un descenso,
   // ni al debut en SportBike.
   const isCareerDebut = state.history.length === 0 && state.championship === "Moto3";
-  const playerRating = state.ovr * w.rider + state.team.strength * w.team - (isCareerDebut ? 3 : 0);
+  const playerRating = state.ovr * w.rider + state.team.strength * w.team - (isCareerDebut ? 1 : 0);
 
   // Nivel base de cada rival para toda la temporada (su sitio dentro del
   // pelotón), heredado (con una ligera deriva) de la temporada anterior.
