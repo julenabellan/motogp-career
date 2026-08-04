@@ -672,14 +672,35 @@ function generateMarketOffers() {
   // No renovación: si la temporada ha sido claramente mala (fuera del
   // top 15), a veces (no muy a menudo) tu propio equipo decide no seguir
   // contando contigo. No es la norma — la mayoría de las malas temporadas
-  // el equipo sigue confiando en ti — pero es una posibilidad real.
-  const badSeason = lastSeason && !lastGood && lastSeason.pos >= 15;
-  const nonRenewal = badSeason && Math.random() < 0.15;
+  // el equipo sigue confiando en ti — pero es una posibilidad real. Se
+  // decide una sola vez por temporada dentro de simulateSeason (ver
+  // state.pendingNonRenewal), no aquí, para que el mercado sea estable
+  // aunque el dashboard se vuelva a renderizar.
+  const nonRenewal = !!state.pendingNonRenewal;
 
   // Oferta de renovación: disponible siempre, salvo que el equipo decida
   // no renovar (ver nonRenewal más arriba).
   if (!nonRenewal) {
     offers.push({ team: currentTeamData, championship: state.championship, isCurrent: true });
+  }
+
+  // Si en la categoría actual ya te han dejado sin renovar un par de veces
+  // (o más), es la escalera avisando de que este nivel no está funcionando:
+  // el mercado GARANTIZA como mínimo una oferta para dar un paso atrás —
+  // MotoGP → WorldSBK, WorldSBK → un campeonato nacional, Moto2 → Moto3,
+  // Supersport → SportBike — en vez de depender solo del azar de
+  // seasonsStuckBadly (que exige, además, estar hundido en la tabla).
+  let repeatedNonRenewalPick = null;
+  if ((state.nonRenewalsInChamp || 0) >= 2) {
+    if (state.championship === "MotoGP") {
+      repeatedNonRenewalPick = { team: pickTeamByStrength("WorldSBK", 69, 77), championship: "WorldSBK" };
+    } else if (state.championship === "WorldSBK") {
+      repeatedNonRenewalPick = pickGuaranteedNationalOffer(55, 70);
+    } else if (state.championship === "Moto2") {
+      repeatedNonRenewalPick = { team: pickTeamByStrength("Moto3", 54, 58), championship: "Moto3" };
+    } else if (state.championship === "Supersport") {
+      repeatedNonRenewalPick = { team: pickTeamByStrength("SportBike", 46, 54), championship: "SportBike" };
+    }
   }
 
   // El ascenso de categoría exige, de normal, haber cumplido ya el tiempo
@@ -864,6 +885,10 @@ function generateMarketOffers() {
     .sort(() => Math.random() - 0.5);
 
   const picks = [];
+  // El paso atrás garantizado (repeatedNonRenewalPick) va primero: así
+  // sobrevive siempre al recorte de abajo, aunque coincida con otras
+  // vías especiales la misma temporada.
+  if (repeatedNonRenewalPick) picks.push(repeatedNonRenewalPick);
   if (targetChamp) {
     const promoCandidates = TEAMS[targetChamp]
       .map((t) => ({ team: t, championship: targetChamp }))
@@ -882,14 +907,21 @@ function generateMarketOffers() {
 
   // Con el retiro ya disponible, solo se añade 1 oferta extra (2 en total
   // junto con la renovación) para que el retiro sea la tercera opción,
-  // no una tarjeta añadida aparte. Si ya hay ofertas especiales (ascenso
-  // y/o salto lateral) no se recortan: el jugador siempre ve todas las
-  // vías reales que se ha ganado, aunque sean más de las "normales".
-  // Si no ha habido renovación, hace falta una oferta extra más (no hay
-  // "renovación" que cuente como una de las tres tarjetas).
+  // no una tarjeta añadida aparte. Si no ha habido renovación, hace falta
+  // una oferta extra más (no hay "renovación" que cuente como una de las
+  // tres tarjetas).
   const extraPicksNeeded = state.age >= RETIRE_MIN_AGE
     ? (nonRenewal ? 2 : 1)
     : (nonRenewal ? 3 : 2);
+
+  // RECORTE: si varias vías especiales coinciden la misma temporada (esto
+  // pasaba sobre todo con las nacionales, que por sí solas podían aportar
+  // hasta 2 ofertas), nunca deben verse más de "extraPicksNeeded" tarjetas
+  // además de la renovación y el retiro. Antes esto solo rellenaba huecos
+  // y nunca recortaba lo que sobraba, así que podían colarse 3 ofertas +
+  // retiro en vez de 2 + retiro. Se recortan las últimas (las de menor
+  // prioridad, ya que las más importantes se han empujado primero).
+  if (picks.length > extraPicksNeeded) picks.length = extraPicksNeeded;
   while (picks.length < extraPicksNeeded && sameLevelCandidates.length) {
     picks.push(sameLevelCandidates.shift());
   }
@@ -1208,6 +1240,19 @@ function simulateSeason(categoryChanged = false) {
     ce, dnf, cg, pod, pol, pos: champPosition, disputed: true,
     event: eventText,
   });
+
+  // No renovación: se decide UNA vez, aquí, al cerrar la temporada — no en
+  // generateMarketOffers, que puede volver a llamarse varias veces sobre el
+  // mismo estado (p. ej. al re-renderizar el dashboard) y antes re-sorteaba
+  // el resultado cada vez. Se guarda en el estado para que el mercado sea
+  // estable y, además, para poder contar cuántas veces ha pasado en esta
+  // categoría (ver repeatedNonRenewalPick en generateMarketOffers).
+  const thisSeasonGood = pod >= 3 || cg >= 1 || champPosition <= 8;
+  const thisSeasonBad = !thisSeasonGood && champPosition >= 15;
+  state.pendingNonRenewal = thisSeasonBad && Math.random() < 0.15;
+  state.nonRenewalsInChamp = categoryChanged
+    ? (state.pendingNonRenewal ? 1 : 0)
+    : (state.nonRenewalsInChamp || 0) + (state.pendingNonRenewal ? 1 : 0);
 
   const newOvr = Math.round(clamp(state.ovr + growth, 40, state.potential));
   const seasonAge = state.age; // edad de la temporada recién disputada
