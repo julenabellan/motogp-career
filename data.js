@@ -43,7 +43,7 @@ const TEAMS = {
     { name: "Aruba.it Racing - Ducati",               strength: 81, color: "#CC0000", logo: "Aruba"        },
     { name: "ROKiT BMW Motorrad WorldSBK Team",       strength: 80, color: "#0066B2", logo: "BMW"          },
     { name: "Bimota by Kawasaki Racing Team",         strength: 79, color: "#00A352", logo: "Bimota"       },
-    { name: "Pata Maxus Yamaha",                      strength: 78, color: "#002D62", logo: "PatoYamaha"   },
+    { name: "Pata Maxus Yamaha",                      strength: 78, color: "#002D62", logo: "PataYamaha"   },
     { name: "Barni Spark Racing Team",                strength: 77, color: "#FF0000", logo: "Barni"        },
     { name: "Team HRC (Honda)",                       strength: 76, color: "#CC0000", logo: "HRC"          },
     { name: "GYTR GRT Yamaha WorldSBK Team",          strength: 75, color: "#1A237E", logo: "GYTR"         },
@@ -100,17 +100,16 @@ const TEAMS = {
   ],
   // Escalón de entrada a la escalera de Superbikes, por debajo de
   // Supersport — el equivalente, en esa escalera, a lo que Moto3 es para
-  // Moto2/MotoGP. Sin logos propios todavía: teamLogo() ya soporta que un
-  // equipo no tenga la propiedad `logo` y simplemente no muestra imagen.
+  // Moto2/MotoGP.
   SportBike: [
-    { name: "CM Triumph Factory Racing", strength: 54, color: "#101010", logo: "Triumph"              },
-    { name: "MTM Kawasaki",              strength: 53, color: "#00A352", logo: "Kawasaki"             },
-    { name: "ARCO Yamaha",               strength: 52, color: "#0033A0" },
-    { name: "Prodina Kawasaki",          strength: 51, color: "#009444" },
-    { name: "VLR Racing Suzuki",         strength: 50, color: "#003399" },
-    { name: "Revo M2 Aprilia",           strength: 49, color: "#5C6670" },
-    { name: "MMR Aprilia",               strength: 48, color: "#3B3B3B", logo: "Aprilia"              },
-    { name: "Kove Racing Team 109",      strength: 46, color: "#FF4500", logo: "Kove"             },
+    { name: "CM Triumph Factory Racing", strength: 54, color: "#101010", logo: "CMTriumph"  },
+    { name: "MTM Kawasaki",              strength: 53, color: "#00A352", logo: "MTM"        },
+    { name: "ARCO Yamaha",               strength: 52, color: "#0033A0", logo: "ArcoYamaha" },
+    { name: "Prodina Kawasaki",          strength: 51, color: "#009444", logo: "Prodina"    },
+    { name: "VLR Racing Suzuki",         strength: 50, color: "#003399", logo: "VLRsuzuki"  },
+    { name: "Revo M2 Aprilia",           strength: 49, color: "#5C6670", logo: "RevoM2"     },
+    { name: "MMR Aprilia",               strength: 48, color: "#3B3B3B", logo: "MMR"        },
+    { name: "Kove Racing Team 109",      strength: 46, color: "#FF4500", logo: "Kove"       },
   ],
 };
 
