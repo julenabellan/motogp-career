@@ -401,27 +401,21 @@ function renderDashboard(justSimulated = false) {
   animateCountUp($("#rider-podiums"), career.podiums);
   animateCountUp($("#rider-titles"), career.titles);
 
+  // Al ganar un campeonato, en vez de un aviso aparte, el propio recuadro
+  // de "Títulos" se enmarca en dorado un momento mientras el número sube,
+  // y el marco se desvanece solo después.
+  if (state.justWonChampionship) {
+    const block = $("#titles-stat-block");
+    block.classList.remove("title-flash");
+    void block.offsetWidth; // fuerza el reflow para poder reiniciar la animación
+    block.classList.add("title-flash");
+    state.justWonChampionship = null;
+    saveState();
+  }
+
   renderHistory(justSimulated);
   renderMarket();
-  renderChampionBanner();
 }
-
-function renderChampionBanner() {
-  const banner = $("#champion-banner");
-  if (state.justWonChampionship) {
-    const { champ, age } = state.justWonChampionship;
-    $("#champion-banner-text").textContent = `🏆 ¡Campeón del Mundo de ${champ} a los ${age} años!`;
-    banner.classList.add("active");
-  } else {
-    banner.classList.remove("active");
-  }
-}
-
-$("#btn-close-banner").addEventListener("click", () => {
-  state.justWonChampionship = null;
-  saveState();
-  renderChampionBanner();
-});
 
 // Flechita de comparación de una estadística con la temporada anterior.
 // higherIsBetter=false para estadísticas donde menos es mejor (posición).
