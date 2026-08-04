@@ -27,9 +27,10 @@ const FIELD = {
   // AJUSTE (6ª pasada): +2 más en las tres, junto con el OVR inicial más
   // abajo, para que la media al llegar a Moto3 con 18 años ronde los 60
   // (antes se quedaba baja, en torno a 55).
-  MotoJunior:      { mean: 47, sd: 14 },
-  RedBullRookies:  { mean: 50, sd: 14 },
-  YamahaR3Cup:     { mean: 43, sd: 14 },
+  // AJUSTE (7ª pasada): +3 más en las tres.
+  MotoJunior:      { mean: 50, sd: 14 },
+  RedBullRookies:  { mean: 53, sd: 14 },
+  YamahaR3Cup:     { mean: 46, sd: 14 },
   // AJUSTE (4ª pasada): un pelín menos exigente en general, no solo el
   // año de estreno — de 58 a 57. AJUSTE (5ª pasada): +1 de vuelta, para
   // que el salto posterior a Moto2/Supersport no sea tan brusco — 57 → 58.
@@ -409,7 +410,7 @@ function startCareer(team, champ = "MotoJunior") {
   // otro empujón más, 46-54 → 49-57, dentro del reajuste general de toda
   // la escalera de categorías. AJUSTE (6ª pasada): +2 más, 49-57 → 51-59
   // — objetivo: llegar a Moto3 con 18 años y ~60 de media (antes ~55).
-  const initialOvr = randInt(51, 59);
+  const initialOvr = randInt(53, 61); // AJUSTE (7ª pasada): +2 más
   const hiddenProfile = generateHiddenProfile();
   state = {
     rider: {
