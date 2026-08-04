@@ -1229,6 +1229,19 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // solo se recorta a +2 el 22% de las veces, antes 32%).
   if (rounded === 3 && eventKind !== "positive" && Math.random() < 0.22) rounded = 2;
 
+  // AJUSTE (15ª pasada): antes de los 28 años, bajar de media de una
+  // temporada a otra sin ningún motivo narrativo (solo ruido/rendimiento
+  // flojo puntual, sin evento de por medio) pasaba con bastante
+  // frecuencia — se notaba sobre todo en Moto2. Sigue pudiendo pasar (es
+  // parte de la aleatoriedad del juego, y de vez en cuando toca), pero
+  // ahora la mayoría de esas caídas "silenciosas" se quedan en 0 en vez de
+  // restar. Los eventos negativos explícitos (lesión, mal encaje en el
+  // cambio de categoría...) no se tocan — esos ya tienen un motivo visible
+  // en el historial, no son el problema.
+  if (state.age < 28 && rounded < 0 && eventKind === null && Math.random() < 0.65) {
+    rounded = 0;
+  }
+
   // 7. Plus por dar el salto a una categoría exigente: al entrar por
   // primera vez en MotoGP o en WorldSBK (Superbikes) se suma un +2 de OVR
   // FIJO, además de toda la subida "normal" ya calculada arriba, para que
@@ -1343,17 +1356,12 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
       if (isMoto3RookieSeason || isMoto2RookieSeason) demoteChance -= 0.05;
       if (Math.random() < demoteChance) {
         const winner = finishers.shift();
-        // FALLO CORREGIDO (12ª pasada): esto insertaba SIEMPRE al piloto
-        // justo en 2ª posición (finishers.splice(1, 0, winner)), carrera
-        // tras carrera, durante toda la temporada. Con demoteChance en
-        // 40-55% de todas las "victorias de mérito" convirtiéndose siempre
-        // en el mismo puesto exacto, el 2º puesto se acumulaba muchísimo
-        // más que el 1º o el 3º tanto en resultados de carrera como, por
-        // arrastre, en la clasificación final del campeonato. Ahora se
-        // reparte entre 2º, 3º y 4º (ponderado hacia 2º, pero sin ser
-        // siempre el mismo puesto).
+        // AJUSTE (16ª pasada): el reparto 50/30/20 entre 2º-4º (ver 12ª
+        // pasada) seguía dejando el 2º puesto demasiado por encima de
+        // los demás — se reparte más uniforme entre 2º y 5º para que la
+        // concentración en el 2º puesto baje más.
         const r = Math.random();
-        const insertAt = r < 0.5 ? 1 : r < 0.8 ? 2 : 3; // 50% 2º, 30% 3º, 20% 4º
+        const insertAt = r < 0.35 ? 1 : r < 0.60 ? 2 : r < 0.80 ? 3 : 4; // 35% 2º, 25% 3º, 20% 4º, 20% 5º
         finishers.splice(insertAt, 0, winner);
       }
     }
