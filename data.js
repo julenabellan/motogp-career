@@ -121,12 +121,12 @@ const TEAMS = {
   Moto2Euro: [
     { name: "Top Surface Aspar Team",                strength: 64, color: "#0199b1", logo: "TopSurface"     },
     { name: "Team Ciatti-Boscoscuro",                strength: 62, color: "#cef300", logo: "Ciatti"         },
-    { name: "AGR Team",                              strength: 58, color: "#0b1f43", logo: "AGR"            },
-    { name: "Team Stylobike Yamaha Philippines",     strength: 56, color: "#21409a", logo: "StyloBike"      },
-    { name: "Cardoso Racing",                        strength: 59, color: "#e40521", logo: "Cardoso"        },
-    { name: "GV Racing",                             strength: 55, color: "#ff7a00", logo: "GV"             },
+    { name: "AGR Team",                              strength: 60, color: "#0b1f43", logo: "AGR"            },
+    { name: "Team Stylobike Yamaha Philippines",     strength: 58, color: "#21409a", logo: "StyloBike"      },
+    { name: "Cardoso Racing",                        strength: 59, color: "#21409a", logo: "Cardoso"        },
+    { name: "GV Racing",                             strength: 55, color: "#29304c", logo: "GV"             },
     { name: "MMR",                                   strength: 61, color: "#5981bc", logo: "MMR"            },
-    { name: "Fau55 Tey Racing",                      strength: 63, color: "#cef300", logo: "Fau55"          },
+    { name: "Fau55 Tey Racing",                      strength: 60, color: "#cef300", logo: "Fau55"          },
   ],
   Moto3: [
     { name: "Leopard Racing",                        strength: 58, color: "#82cad1", logo: "Leopard"        },
