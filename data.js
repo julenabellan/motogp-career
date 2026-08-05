@@ -203,10 +203,10 @@ const TEAMS = {
   // en script.js), aunque sí hay 4 escuadras distintas entre las que
   // elegir, a diferencia de Red Bull Rookies o Yamaha R3 Cup.
   Stock600: [
-    { name: "Yamaha MS Racing",           strength: 54, color: "#21409a", logo: "YamahaMS"      },
-    { name: "GRT Yamaha Racing",          strength: 51, color: "#21409a", logo: "GRTYamaha"      },
-    { name: "Yamaha PJ Motorsport",       strength: 49, color: "#21409a", logo: "YamahaPJ"       },
-    { name: "Yamaha Finance Racing Team", strength: 46, color: "#21409a", logo: "YamahaFinance"  },
+    { name: "MDR Competition",           strength: 52, color: "#21409a", logo: "MDR"      },
+    { name: "Team Honda Laglisse",          strength: 54, color: "#cc1517", logo: "Laglisse"      },
+    { name: "GV Racing",       strength: 49, color: "#29304c", logo: "GV"       },
+    { name: "Top Surface Aspar Team", strength: 50, color: "#0199b1", logo: "TopSurface"  },
   ],
 };
 
