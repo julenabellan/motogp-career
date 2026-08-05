@@ -417,6 +417,7 @@ function startCareer(team, champ = "MotoJunior") {
     championship: champ,
     seasonsInChamp: 0,
     promotionReadyAt: pickPromotionThreshold(champ),
+    juniorGradTarget: null,
     history: [],
     seasonNumber: 1,
   };
@@ -1188,20 +1189,19 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
     rounded += 2;
   }
 
-  // 8. Graduación de la fase de formación: el crecimiento anual normal (de
-  // pocos puntos por temporada) es demasiado lento para que, en solo 1-2
-  // temporadas, un piloto que empezó con 38-48 de OVR llegue a Moto3 o
-  // SportBike a un nivel parecido al que antes tenía un debut directo ahí
-  // (58-68). Por eso, al dar ese salto concreto, se añade el empujón extra
-  // que faltaba para dejarlo en ese rango — con variación según su
-  // potencial oculto, para que la fase júnior siga notándose (los pilotos
-  // con más techo llegan más arriba del rango, no todos igual).
-  if (categoryChanged && JUNIOR_CHAMPS.includes(previousChampionship) &&
+  // 8. Cierre del salto de graduación (2ª parte): si el piloto llegó a
+  // Moto3/SportBike desde la fase de formación (ver el empujón inicial en
+  // simulateSeason), al terminar su 2ª temporada ahí se completa el resto
+  // del camino hasta el nivel objetivo que se fijó en su momento — así el
+  // total acumulado (empujón inicial + crecimiento normal de la temporada 1
+  // y 2 + este cierre) deja al piloto en un nivel parecido al de siempre,
+  // solo que repartido en dos temporadas en vez de todo de golpe.
+  if (!categoryChanged && state.seasonsInChamp === 2 && state.juniorGradTarget != null &&
       (state.championship === "Moto3" || state.championship === "SportBike")) {
-    const targetOvr = clamp(randInt(62, 75) + Math.round((p.potential - 85) / 8), 56, 80);
     const projectedOvr = state.ovr + rounded;
-    const jump = clamp(targetOvr - projectedOvr, 0, 26);
+    const jump = clamp(state.juniorGradTarget - projectedOvr, 0, 20);
     rounded += Math.round(jump);
+    state.juniorGradTarget = null;
   }
 
   return { growth: rounded, eventText };
@@ -1217,6 +1217,27 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
     state.promotionReadyAt = pickPromotionThreshold(state.championship);
   } else {
     state.seasonsInChamp = (state.seasonsInChamp || 0) + 1;
+  }
+
+  // AJUSTE (7ª pasada): el salto de la fase de formación (JuniorGP/Red Bull
+  // Rookies/R3 Cup) a Moto3 o SportBike se reparte en dos partes en vez de
+  // llegar todo de golpe al final de la primera temporada — así la primera
+  // temporada ya no se juega "floja" (se nota parte de la mejora desde el
+  // primer momento) y el salto entre la 1ª y la 2ª temporada es más suave.
+  // Primera parte: un empujón inmediato AQUÍ, antes de disputar la
+  // temporada, que cubre algo más de la mitad del camino hasta el nivel
+  // objetivo (el mismo rango de siempre, 62-75 según potencial). El resto
+  // del camino se completa gradualmente con el crecimiento normal de la
+  // temporada 1 y, si aún falta algo, con un cierre al terminar la
+  // temporada 2 (ver computeSeasonGrowth) — así se llega a Moto2/Supersport
+  // con una media parecida a la de siempre, solo que de forma más gradual.
+  if (categoryChanged && JUNIOR_CHAMPS.includes(previousChampionship) &&
+      (state.championship === "Moto3" || state.championship === "SportBike")) {
+    const p = state.hiddenProfile;
+    const target = clamp(randInt(62, 75) + Math.round((p.potential - 85) / 8), 56, 80);
+    state.juniorGradTarget = target;
+    const initialJump = clamp(Math.round((target - state.ovr) * 0.55), 0, 20);
+    state.ovr = clamp(state.ovr + initialJump, 40, state.potential);
   }
 
   const w = CATEGORY_WEIGHTS[state.championship] || CATEGORY_WEIGHTS.Moto3;
