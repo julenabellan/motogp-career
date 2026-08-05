@@ -806,7 +806,14 @@ function generateMarketOffers() {
   // yendo en Superbikes, esa puerta ya no se abre. Y ni siquiera con el
   // tope de edad cumplido es un hecho garantizado: hay muy buena
   // probabilidad, pero no el 100% de las veces.
-  if (!targetChamp && state.championship === "WorldSBK" && state.age <= 28 &&
+  // Caso especial dentro de esta vía: ser CAMPEÓN de WorldSBK siendo menor
+  // de 24 años es un resultado tan fuera de lo normal para esa edad que la
+  // probabilidad de recibir esa oferta de MotoGP sube mucho (aunque
+  // tampoco al 100%).
+  if (!targetChamp && state.championship === "WorldSBK" && state.age < 24 &&
+      lastSeason && lastSeason.pos === 1 && Math.random() < 0.92) {
+    targetChamp = "MotoGP";
+  } else if (!targetChamp && state.championship === "WorldSBK" && state.age <= 28 &&
       lastSeason && (lastSeason.cg >= 1 || lastSeason.pos <= 2) && Math.random() < 0.75) {
     targetChamp = "MotoGP";
   }
@@ -948,12 +955,28 @@ function generateMarketOffers() {
   const worldSbkCareerFading =
     state.championship === "WorldSBK" && ageGate33_34 && outsideTop10Recently;
 
+  // Dos empujoncitos ligeros más a la vía nacional (nada exagerado, solo
+  // un poco más de probabilidad de verla):
+  //  - En WorldSBK, con 33 años o más, si esta temporada NO has quedado
+  //    entre los 3 primeros — antes hacía falta llevar 2 temporadas
+  //    SEGUIDAS fuera del Top 10 (ver worldSbkCareerFading); esto es más
+  //    laxo y cubre también al piloto veterano que simplemente ya no está
+  //    entre los mejores, sin estar hundido del todo.
+  //  - En Supersport, si quedas fuera del Top 5 del campeonato.
+  const wsbk33PlusNotTop3 =
+    state.championship === "WorldSBK" && state.age >= 33 &&
+    lastSeason && lastSeason.pos > 3 && Math.random() < 0.25;
+  const sspOutsideTop5 =
+    state.championship === "Supersport" &&
+    lastSeason && lastSeason.pos > 5 && Math.random() < 0.18;
+
   let nationalPicks = [];
   if (outsideTop10For3) {
     // Garantizado: como mínimo 1, nunca 0 (a diferencia de las otras vías).
     nationalPicks = pickNationalOffers(55, 70, true);
     if (nationalPicks.length === 0) nationalPicks = [pickGuaranteedNationalOffer(55, 70)];
-  } else if (stuckWithoutPromotion || supersportDeadEnd || worldSbkCareerFading) {
+  } else if (stuckWithoutPromotion || supersportDeadEnd || worldSbkCareerFading ||
+             wsbk33PlusNotTop3 || sspOutsideTop5) {
     nationalPicks = pickNationalOffers(55, 70);
   }
 
