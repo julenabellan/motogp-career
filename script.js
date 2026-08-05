@@ -825,17 +825,26 @@ function generateMarketOffers() {
   // es un resultado excepcional que, por sí solo, abre la puerta de vuelta
   // a los campeonatos internacionales — no hace falta esperar ningún
   // tiempo "mínimo" en la categoría, es justo la vía de segunda
-  // oportunidad. Lo normal es que la oferta sea de WorldSBK (garantizada);
-  // si además el piloto es joven y con margen real de mejora (potencial
-  // alto, algo que el jugador nunca ve directamente), también cabe la
-  // posibilidad de que le llegue una oportunidad en Supersport.
+  // oportunidad. A DÓNDE vuelve depende de su nivel real (OVR), no solo
+  // del resultado: con una media decente, la vía es WorldSBK (a su nivel
+  // real de pelotón); con una media más normal (un campeón "de la casa",
+  // sin tanto nivel de fondo), la vía es Supersport, un peldaño más
+  // realista para su OVR. Si además el piloto es joven y con margen real
+  // de mejora (potencial alto, algo que el jugador nunca ve directamente),
+  // también cabe la posibilidad de que a un piloto con media decente le
+  // llegue, aparte, una oportunidad en Supersport.
   let nationalPromoWsbk = null;
   let nationalPromoSsp = null;
   if (NATIONAL_CHAMPS.includes(state.championship) && lastSeason && lastSeason.pos <= 2) {
-    nationalPromoWsbk = { team: pickTeamByStrength("WorldSBK", 69, 78), championship: "WorldSBK" };
-    const youngWithPotential = state.age <= 27 && state.potential >= 85;
-    if (youngWithPotential && Math.random() < 0.35) {
-      nationalPromoSsp = { team: pickTeamByStrength("Supersport", 70, 76), championship: "Supersport" };
+    const decentOvr = state.ovr >= 74;
+    if (decentOvr) {
+      nationalPromoWsbk = { team: pickTeamByStrength("WorldSBK", 69, 78), championship: "WorldSBK" };
+      const youngWithPotential = state.age <= 27 && state.potential >= 85;
+      if (youngWithPotential && Math.random() < 0.35) {
+        nationalPromoSsp = { team: pickTeamByStrength("Supersport", 70, 76), championship: "Supersport" };
+      }
+    } else {
+      nationalPromoSsp = { team: pickTeamByStrength("Supersport", 67, 73), championship: "Supersport" };
     }
   }
 
