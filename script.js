@@ -1022,17 +1022,21 @@ function generateMarketOffers() {
 
   // Salida de Stock600, según cómo termine la temporada:
   //  - Campeón: sí o sí, oferta del Europeo de Moto2.
-  //  - 2º: probabilidad media de la misma oferta; si no, se queda.
-  //  - 25 años o más (y no ha sido ni 1º ni 2º esta vez): normalmente se le
-  //    manda hacia un campeonato nacional, con una pequeña posibilidad de
-  //    que sea Supersport en su lugar — o, la mayoría de las veces que no
-  //    se activa ninguna de las dos, simplemente sigue en Stock600.
+  //  - 2º: probabilidad alta de la misma oferta (60%); si no, se queda.
+  //  - 3º: probabilidad de la misma oferta (35%); si no, se queda.
+  //  - 25 años o más (y no ha sido ni 1º, 2º ni 3º esta vez): normalmente
+  //    se le manda hacia un campeonato nacional, con una pequeña
+  //    posibilidad de que sea Supersport en su lugar — o, la mayoría de
+  //    las veces que no se activa ninguna de las dos, simplemente sigue
+  //    en Stock600.
   let stock600ExitPick = null;
   if (state.championship === "Stock600" && lastSeason) {
     if (lastSeason.pos === 1) {
       stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 58, 64), championship: "Moto2Euro" };
-    } else if (lastSeason.pos === 2 && Math.random() < 0.40) {
+    } else if (lastSeason.pos === 2 && Math.random() < 0.60) { // AJUSTE: 0.40 → 0.60
       stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 56, 62), championship: "Moto2Euro" };
+    } else if (lastSeason.pos === 3 && Math.random() < 0.35) { // AJUSTE: nuevo
+      stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 55, 61), championship: "Moto2Euro" };
     }
   }
   let stock600VeteranPick = null;
