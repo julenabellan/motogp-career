@@ -1233,17 +1233,16 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // aporta el salto de OVR de la graduación.
   const isMoto3RookieSeason = categoryChanged && state.championship === "Moto3" &&
     JUNIOR_CHAMPS.includes(previousChampionship);
-  // AJUSTE (5ª pasada): en Moto2 y Moto3 la primera temporada ya no se
-  // "frena" recortando el resultado ya calculado — en vez de eso, se hace
-  // un pelín más difícil de entrada, con un pequeño descuento de rating.
-  // Ganar o hacer podio sigue siendo posible según el desarrollo normal de
-  // la temporada (dentro de la probabilidad), solo que un poco menos
-  // probable, igual que quedar 2º, etc.
+  // AJUSTE (6ª pasada): en Moto2 y Moto3 la primera temporada ya no lleva
+  // ningún ajuste especial de dificultad — ni recorte del resultado ni
+  // descuento de rating; sale tal cual de la simulación normal de la
+  // temporada. Se mantiene solo el aviso de que es "temporada de novato"
+  // (isMotoStepUpRookie) para que el amortiguado general de más abajo no
+  // se le aplique.
   const isMotoStepUpRookie = isRookieSeason &&
     (state.championship === "Moto2" || state.championship === "Moto3");
   const playerRating = state.ovr * w.rider + state.team.strength * w.team
-    + (isMoto3RookieSeason ? 2 : 0)
-    - (isMotoStepUpRookie ? 6 : 0);
+    + (isMoto3RookieSeason ? 2 : 0);
 
   // Nivel base de cada rival para toda la temporada (su sitio dentro del
   // pelotón), heredado (con una ligera deriva) de la temporada anterior.
@@ -1327,9 +1326,9 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // debut sobresaliente, solo que no el título. A partir del tercer año en
   // la misma categoría la probabilidad de ser campeón queda intacta (la
   // segunda temporada es una transición a medias, ver isSophomoreSeason).
-  // AJUSTE (5ª pasada): en Moto2 y Moto3 este amortiguado ya NO se aplica
-  // — su primera temporada se hace más difícil con el descuento de rating
-  // de arriba, no recortando el resultado ya jugado.
+  // AJUSTE (6ª pasada): en Moto2 y Moto3 este amortiguado ya NO se aplica
+  // en su primera temporada — sale directamente de la simulación normal,
+  // sin recorte y sin ningún otro ajuste.
   let champDampChance = 0;
   let top3DampChance = 0;
   const top3DampRange = [4, 9];
