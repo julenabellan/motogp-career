@@ -36,6 +36,7 @@ const CHAMP_LABELS = {
   MotoJunior: "FIM JuniorGP",
   RedBullRookies: "Red Bull Rookies Cup",
   YamahaR3Cup: "Yamaha R3 Cup",
+  Moto2Euro: "Europeo de Moto2",
 };
 function champLabel(key) {
   return CHAMP_LABELS[key] || key;
@@ -110,6 +111,22 @@ const TEAMS = {
     { name: "Italtrans Racing Team",                 strength: 70, color: "#0602ae", logo: "Italtrans"      },
     { name: "BLU CRU Pramac Yamaha Moto2",           strength: 69, color: "#0c1c8c", logo: "BluCruPramac"   },
     { name: "KLINT Forward Factory Team",            strength: 68, color: "#79ebd1", logo: "Klint"          },
+  ],
+  // Europeo de Moto2 (FIM Moto2 European Championship) — de momento,
+  // solo una vía de escape para pilotos de Moto2 a los que no les acaba
+  // de ir bien allí, NO un peldaño hacia ninguna otra categoría todavía.
+  // La lógica de acceso/salida (quién recibe estas ofertas y hacia dónde
+  // se puede ir después) se definirá más adelante; por ahora solo están
+  // los equipos, colores y logos.
+  Moto2Euro: [
+    { name: "Top Surface Aspar Team",                strength: 64, color: "#0199b1", logo: "TopSurface"     },
+    { name: "Team Ciatti-Boscoscuro",                strength: 62, color: "#cef300", logo: "Ciatti"         },
+    { name: "AGR Team",                              strength: 58, color: "#0b1f43", logo: "AGR"            },
+    { name: "Team Stylobike Yamaha Philippines",     strength: 56, color: "#21409a", logo: "StyloBike"      },
+    { name: "Cardoso Racing",                        strength: 59, color: "#e40521", logo: "Cardoso"        },
+    { name: "GV Racing",                             strength: 55, color: "#ff7a00", logo: "GV"             },
+    { name: "MMR",                                   strength: 61, color: "#5981bc", logo: "MMR"            },
+    { name: "Fau55 Tey Racing",                      strength: 63, color: "#cef300", logo: "Fau55"          },
   ],
   Moto3: [
     { name: "Leopard Racing",                        strength: 58, color: "#82cad1", logo: "Leopard"        },
