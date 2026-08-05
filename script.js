@@ -27,11 +27,13 @@ const FIELD = {
   RedBullRookies:  { mean: 46, sd: 14 },
   YamahaR3Cup:     { mean: 40, sd: 14 },
   Moto3:      { mean: 59, sd: 13 },
-  Moto2:      { mean: 69, sd: 13 },
+  // AJUSTE (nuevo): Moto2 +1 punto (69→70) y Europeo de Moto2 -1 punto
+  // (61→60), para separar algo más los dos niveles.
+  Moto2:      { mean: 70, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
   // Europeo de Moto2 (FIM Moto2 European Championship): vía alternativa a
   // la subida directa Moto3→Moto2, con un nivel intermedio entre ambas.
-  Moto2Euro:  { mean: 61, sd: 13 },
+  Moto2Euro:  { mean: 60, sd: 13 },
   SportBike:  { mean: 56, sd: 13 },
   Supersport: { mean: 66, sd: 12 },
   WorldSBK:   { mean: 75, sd: 11 },
@@ -850,14 +852,22 @@ function generateMarketOffers() {
   let nationalPromoSsp = null;
   if (NATIONAL_CHAMPS.includes(state.championship) && lastSeason && lastSeason.pos <= 2) {
     const decentOvr = state.ovr >= 74;
-    if (decentOvr) {
+    // AJUSTE (nuevo): a partir de los 35 años, la puerta de vuelta a
+    // Superbikes ya no se abre por muy bien que vaya la temporada —
+    // demasiado tarde para ese salto. La vía de Supersport, en cambio,
+    // sigue disponible.
+    const tooOldForSuperbikes = state.age >= 35;
+    if (decentOvr && !tooOldForSuperbikes) {
       nationalPromoWsbk = { team: pickTeamByStrength("WorldSBK", 69, 78), championship: "WorldSBK" };
       const youngWithPotential = state.age <= 27 && state.potential >= 85;
       if (youngWithPotential && Math.random() < 0.35) {
         nationalPromoSsp = { team: pickTeamByStrength("Supersport", 70, 76), championship: "Supersport" };
       }
     } else {
-      nationalPromoSsp = { team: pickTeamByStrength("Supersport", 67, 73), championship: "Supersport" };
+      nationalPromoSsp = {
+        team: pickTeamByStrength("Supersport", decentOvr ? 70 : 67, decentOvr ? 76 : 73),
+        championship: "Supersport",
+      };
     }
   }
 
@@ -1022,8 +1032,13 @@ function generateMarketOffers() {
 
   // Salida de Stock600, según cómo termine la temporada:
   //  - Campeón: sí o sí, oferta del Europeo de Moto2.
-  //  - 2º: probabilidad alta de la misma oferta (60%); si no, se queda.
-  //  - 3º: probabilidad de la misma oferta (35%); si no, se queda.
+  //  - 2º: probabilidad alta de la misma oferta.
+  //  - 3º: probabilidad de la misma oferta.
+  //  - 4º-8º: AJUSTE (nuevo) — antes no había ninguna vía de salida en este
+  //    rango (solo se abría a partir de los 25 años, ver más abajo). Ahora
+  //    hay una pequeña posibilidad de salir ya, con más variedad de
+  //    destino: la mayoría de las veces un equipo de SportBike (nivel
+  //    parecido), y alguna vez el Europeo de Moto2.
   //  - 25 años o más (y no ha sido ni 1º, 2º ni 3º esta vez): normalmente
   //    se le manda hacia un campeonato nacional, con una pequeña
   //    posibilidad de que sea Supersport en su lugar — o, la mayoría de
@@ -1033,16 +1048,20 @@ function generateMarketOffers() {
   if (state.championship === "Stock600" && lastSeason) {
     if (lastSeason.pos === 1) {
       stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 58, 64), championship: "Moto2Euro" };
-    } else if (lastSeason.pos === 2 && Math.random() < 0.60) { // AJUSTE: 0.40 → 0.60
+    } else if (lastSeason.pos === 2 && Math.random() < 0.68) { // AJUSTE: 0.60 → 0.68
       stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 56, 62), championship: "Moto2Euro" };
-    } else if (lastSeason.pos === 3 && Math.random() < 0.35) { // AJUSTE: nuevo
+    } else if (lastSeason.pos === 3 && Math.random() < 0.45) { // AJUSTE: 0.35 → 0.45
       stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 55, 61), championship: "Moto2Euro" };
+    } else if (lastSeason.pos >= 4 && lastSeason.pos <= 8 && Math.random() < 0.22) { // AJUSTE: nuevo
+      stock600ExitPick = Math.random() < 0.7
+        ? { team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" }
+        : { team: pickTeamByStrength("Moto2Euro", 52, 58), championship: "Moto2Euro" };
     }
   }
   let stock600VeteranPick = null;
   let stock600VeteranSspPick = null;
   if (state.championship === "Stock600" && state.age >= 25 && !stock600ExitPick &&
-      Math.random() < 0.55) {
+      Math.random() < 0.60) { // AJUSTE: 0.55 → 0.60
     if (Math.random() < 0.15) {
       stock600VeteranSspPick = { team: pickTeamByStrength("Supersport", 66, 72), championship: "Supersport" };
     } else {
@@ -1080,35 +1099,37 @@ function generateMarketOffers() {
   }
 
   // Salida del Europeo de Moto2, según cómo termine la temporada:
-  //  - Campeón: 75% Moto2, 15% Supersport directo, 5% WorldSBK, 5% se
-  //    queda.
-  //  - 2º: 35% Moto2, 30% Supersport, 10% nacional, 25% se queda.
-  //  - 3º: 15% Moto2 (difícil), 45% Supersport (bien), 30% nacional, 10%
-  //    se queda.
+  //  - Campeón: AJUSTE (más fácil) — 78% Moto2, 15% Supersport directo, 4%
+  //    WorldSBK, y solo un 3% se queda (antes 5%).
+  //  - 2º: AJUSTE (más fácil) — 40% Moto2, 33% Supersport, 10% nacional,
+  //    17% se queda (antes 35/30/10/25).
+  //  - 3º: AJUSTE (más fácil) — 19% Moto2, 48% Supersport, 27% nacional,
+  //    6% se queda (antes 15/45/30/10).
   //  - 4º o peor: nacional o Supersport, con más peso cuanto mayor es el
-  //    piloto (26+); si no, lo normal es quedarse otra temporada.
+  //    piloto (26+); si no, lo normal es quedarse otra temporada. (Sin
+  //    cambios — el ajuste pedido era solo para los puestos top 3.)
   let moto2EuroExitPick = null;
   if (state.championship === "Moto2Euro" && lastSeason) {
     const pos = lastSeason.pos;
     const olderRider = state.age >= 26;
     if (pos === 1) {
       const r = Math.random();
-      if (r < 0.75) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 75), championship: "Moto2" };
-      else if (r < 0.90) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 69, 75), championship: "Supersport" };
-      else if (r < 0.95) moto2EuroExitPick = { team: pickTeamByStrength("WorldSBK", 69, 76), championship: "WorldSBK" };
-      // el 5% restante: se queda.
+      if (r < 0.78) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 75), championship: "Moto2" };
+      else if (r < 0.93) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 69, 75), championship: "Supersport" };
+      else if (r < 0.97) moto2EuroExitPick = { team: pickTeamByStrength("WorldSBK", 69, 76), championship: "WorldSBK" };
+      // el 3% restante: se queda.
     } else if (pos === 2) {
       const r = Math.random();
-      if (r < 0.35) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 73), championship: "Moto2" };
-      else if (r < 0.65) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 68, 74), championship: "Supersport" };
-      else if (r < 0.75) moto2EuroExitPick = pickGuaranteedNationalOffer(55, 68);
-      // el 25% restante: se queda.
+      if (r < 0.40) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 73), championship: "Moto2" };
+      else if (r < 0.73) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 68, 74), championship: "Supersport" };
+      else if (r < 0.83) moto2EuroExitPick = pickGuaranteedNationalOffer(55, 68);
+      // el 17% restante: se queda.
     } else if (pos === 3) {
       const r = Math.random();
-      if (r < 0.15) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 71), championship: "Moto2" };
-      else if (r < 0.60) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 67, 73), championship: "Supersport" };
-      else if (r < 0.90) moto2EuroExitPick = pickGuaranteedNationalOffer(53, 66);
-      // el 10% restante: se queda.
+      if (r < 0.19) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 71), championship: "Moto2" };
+      else if (r < 0.67) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 67, 73), championship: "Supersport" };
+      else if (r < 0.94) moto2EuroExitPick = pickGuaranteedNationalOffer(53, 66);
+      // el 6% restante: se queda.
     } else {
       const r = Math.random();
       if (r < (olderRider ? 0.40 : 0.20)) {
@@ -1178,6 +1199,18 @@ function generateMarketOffers() {
     nationalPicks = pickNationalOffers(55, 70);
   }
 
+  // AJUSTE (nuevo): salto lateral entre campeonatos nacionales (ESBK/BSB/
+  // CIV) — posibilidad real pero baja de cambiar a otro nacional distinto
+  // sin que sea ni ascenso ni descenso, solo variedad dentro del mismo
+  // nivel (nunca al mismo campeonato en el que ya estás).
+  let nationalLateralPick = null;
+  if (NATIONAL_CHAMPS.includes(state.championship) && Math.random() < 0.12) {
+    const others = NATIONAL_CHAMPS.filter((c) => c !== state.championship);
+    const champ = others[randInt(0, others.length - 1)];
+    const cs = state.team.strength;
+    nationalLateralPick = { team: pickTeamByStrength(champ, cs - 8, cs + 8), championship: champ };
+  }
+
   const sameLevelCandidates = TEAMS[state.championship]
     .filter((t) => t.name !== state.team.name)
     .map((t) => ({ team: t, championship: state.championship }))
@@ -1225,6 +1258,7 @@ function generateMarketOffers() {
   if (stock600VeteranPick) picks.push(stock600VeteranPick);
   if (stock600VeteranSspPick) picks.push(stock600VeteranSspPick);
   if (moto2EuroExitPick) picks.push(moto2EuroExitPick);
+  if (nationalLateralPick) picks.push(nationalLateralPick);
   if (demotionPick) picks.push(demotionPick);
   if (stagnationPick) picks.push(stagnationPick);
   nationalPicks.forEach((p) => picks.push(p));
