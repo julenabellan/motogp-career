@@ -802,10 +802,12 @@ function generateMarketOffers() {
 
   // Vía especial: piloto puntero de WorldSBK (gana carreras o está entre
   // los 2 primeros del campeonato) puede recibir ofertas de MotoGP — pero
-  // solo hasta los 30 años. Pasada esa edad, por muy bien que le siga
-  // yendo en Superbikes, esa puerta ya no se abre.
-  if (!targetChamp && state.championship === "WorldSBK" && state.age <= 30 &&
-      lastSeason && (lastSeason.cg >= 1 || lastSeason.pos <= 2)) {
+  // solo hasta los 28 años. Pasada esa edad, por muy bien que le siga
+  // yendo en Superbikes, esa puerta ya no se abre. Y ni siquiera con el
+  // tope de edad cumplido es un hecho garantizado: hay muy buena
+  // probabilidad, pero no el 100% de las veces.
+  if (!targetChamp && state.championship === "WorldSBK" && state.age <= 28 &&
+      lastSeason && (lastSeason.cg >= 1 || lastSeason.pos <= 2) && Math.random() < 0.75) {
     targetChamp = "MotoGP";
   }
 
@@ -832,14 +834,24 @@ function generateMarketOffers() {
   //    un equipo de Superbikes acorde a su nivel, en vez de languidecer en
   //    la categoría reina.
   //  - Piloto de Moto2 que se queda a mitad de tabla (4º o peor, sin
-  //    ascenso a MotoGP): puede dar el salto a un equipo mediano de
-  //    Superbikes como vía alternativa, en vez de estancarse en Moto2.
+  //    ascenso a MotoGP): la vía lateral YA NO es siempre la misma oferta.
+  //    La mayoría de las veces el mercado simplemente ofrece otro equipo
+  //    de Moto2 (ver sameLevelCandidates más abajo); a veces (no siempre)
+  //    aparece una oferta de WorldSBK, y muy de vez en cuando una de
+  //    Supersport en su lugar.
   let wsbkPick = null;
   if (state.championship === "MotoGP" && state.age >= 32 && !lastGood) {
     const [lo, hi] = state.ovr >= 85 ? [76, 82] : [69, 77];
     wsbkPick = { team: pickTeamByStrength("WorldSBK", lo, hi), championship: "WorldSBK" };
-  } else if (state.championship === "Moto2" && lastSeason && lastSeason.pos >= 4) {
-    wsbkPick = { team: pickTeamByStrength("WorldSBK", 69, 76), championship: "WorldSBK" }; // equipo mediano
+  } else if (state.championship === "Moto2" && lastSeason && lastSeason.pos >= 4 && !targetChamp) {
+    const lateralRoll = Math.random();
+    if (lateralRoll < 0.40) {
+      wsbkPick = { team: pickTeamByStrength("WorldSBK", 69, 76), championship: "WorldSBK" }; // equipo mediano
+    } else if (lateralRoll < 0.48) {
+      wsbkPick = { team: pickTeamByStrength("Supersport", 68, 74), championship: "Supersport" }; // poco frecuente
+    }
+    // El resto de las veces (52%) no hay vía lateral esta temporada: el
+    // hueco se rellena con otro equipo de Moto2 (sameLevelCandidates).
   }
 
   // Salida lateral a Supersport: piloto de Moto3 que no destaca (temporada
@@ -1009,7 +1021,13 @@ function generateMarketOffers() {
     offers.push({ team: c.team, championship: c.championship, isCurrent: false });
   });
 
-  return offers;
+  // Orden: la renovación (si existe) siempre va primera / a la izquierda,
+  // pero el resto de tarjetas se mezclan cada vez. Antes salían siempre en
+  // el mismo orden relativo (p. ej. WorldSBK siempre en medio y Moto2
+  // siempre a la derecha), lo cual quedaba raro y predecible.
+  const renewalOffer = offers.find((o) => o.isCurrent);
+  const restOffers = offers.filter((o) => !o.isCurrent).sort(() => Math.random() - 0.5);
+  return renewalOffer ? [renewalOffer, ...restOffers] : restOffers;
 }
 
 function findTeamData(name, championship) {
