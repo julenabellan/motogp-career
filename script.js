@@ -17,28 +17,20 @@ const MAX_AGE_NATIONAL = 41;
 const FIELD = {
   // Fase de formación (16-17 años, antes de Moto3/SportBike): pelotón más
   // flojo y todavía muy irregular — es la primera parrilla profesional.
-  // AJUSTE (5ª pasada): con la fase júnior de por medio, el piloto llegaba
-  // a Moto3 (y de ahí a Moto2/Supersport) con menos nivel medio que antes
-  // de que existiera esta fase, complicando el resto de la escalera de
-  // rebote. Se sube un poco el nivel de las categorías júnior (más en
-  // Red Bull Rookies, que es la más competitiva de las tres) para que la
-  // progresión sean más "escalones" pequeños y no un pozo en medio de la
-  // carrera.
-  // AJUSTE (6ª pasada): +2 más en las tres, junto con el OVR inicial más
-  // abajo, para que la media al llegar a Moto3 con 18 años ronde los 60
-  // (antes se quedaba baja, en torno a 55).
-  // AJUSTE (7ª pasada): +3 más en las tres.
-  MotoJunior:      { mean: 50, sd: 14 },
-  RedBullRookies:  { mean: 53, sd: 14 },
-  YamahaR3Cup:     { mean: 47, sd: 14 },
-  // AJUSTE (4ª pasada): un pelín menos exigente en general, no solo el
-  // año de estreno — de 58 a 57. AJUSTE (5ª pasada): +1 de vuelta, para
-  // que el salto posterior a Moto2/Supersport no sea tan brusco — 57 → 58.
-  Moto3:      { mean: 59, sd: 13 }, // AJUSTE (9ª pasada): +1 más
-  Moto2:      { mean: 68, sd: 13 },
+  // AJUSTE (pizca): nivel medio un pelín más bajo de lo inicial, para que
+  // llegar preparado a los 18 años sea un poco más asequible, sin que se
+  // note apenas.
+  // AJUSTE (4ª pasada): subida general de nivel — un punto a todos menos
+  // WorldSBK, MotoGP y los nacionales (ESBK/BSB/CIV), y dos puntos extra a
+  // SportBike, Supersport y Yamaha R3 Cup.
+  MotoJunior:      { mean: 44, sd: 14 },
+  RedBullRookies:  { mean: 46, sd: 14 },
+  YamahaR3Cup:     { mean: 40, sd: 14 },
+  Moto3:      { mean: 59, sd: 13 },
+  Moto2:      { mean: 69, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
-  SportBike:  { mean: 55, sd: 13 },
-  Supersport: { mean: 65, sd: 12 },
+  SportBike:  { mean: 56, sd: 13 },
+  Supersport: { mean: 66, sd: 12 },
   WorldSBK:   { mean: 75, sd: 11 },
   // Campeonatos nacionales de Superbike: nivel de pelotón por debajo de
   // WorldSBK, vía alternativa para pilotos que no llegan (o no se
@@ -405,13 +397,8 @@ function startCareer(team, champ = "MotoJunior") {
   // bonus de 16-18 años) lo devuelva a un nivel similar al que antes tenía
   // al debutar directamente en Moto3 — es una fase de desarrollo, no un
   // retraso de la progresión. AJUSTE (2ª pasada): mínimo subido a 44 para
-  // que la media de partida a los 16 años sea un poco más alta. AJUSTE
-  // (4ª pasada): subido otro pelín más, 44-52 → 46-54. AJUSTE (5ª pasada):
-  // otro empujón más, 46-54 → 49-57, dentro del reajuste general de toda
-  // la escalera de categorías. AJUSTE (6ª pasada): +2 más, 49-57 → 51-59
-  // — objetivo: llegar a Moto3 con 18 años y ~60 de media (antes ~55).
-  // AJUSTE (13ª pasada): +2 más, 53-61 → 55-63.
-  const initialOvr = randInt(55, 63); // AJUSTE (13ª pasada): +2 más
+  // que la media de partida a los 16 años sea un poco más alta.
+  const initialOvr = randInt(44, 52);
   const hiddenProfile = generateHiddenProfile();
   state = {
     rider: {
@@ -797,26 +784,12 @@ function generateMarketOffers() {
 
   let targetChamp = null;
   if (lastGood && (tenureOk || (exceptional && Math.random() < 0.25) || guaranteedPromotion)) {
-    // Fase de formación: Red Bull Rookies Cup desemboca siempre en Moto3;
-    // Yamaha R3 Cup desemboca siempre en SportBike. FIM JuniorGP
-    // (MotoJunior) es distinta: acabar 1º-3º lleva a Moto3 con toda
-    // normalidad, pero un 4º o 5º puesto es una posición límite — ni
-    // claramente para Moto3 ni un fracaso — así que ahí se reparte por
-    // probabilidad entre Moto3, SportBike, o directamente ninguna oferta
-    // de ascenso todavía (se queda otra temporada más en JuniorGP).
-    if (state.championship === "RedBullRookies") {
+    // Fase de formación: FIM JuniorGP y Red Bull Rookies Cup desembocan en
+    // Moto3; Yamaha R3 Cup desemboca en SportBike.
+    if (state.championship === "MotoJunior" || state.championship === "RedBullRookies") {
       targetChamp = "Moto3";
     } else if (state.championship === "YamahaR3Cup") {
       targetChamp = "SportBike";
-    } else if (state.championship === "MotoJunior") {
-      if (lastSeason && (lastSeason.pos === 4 || lastSeason.pos === 5)) {
-        const roll = Math.random();
-        if (roll < 0.55) targetChamp = "Moto3";
-        else if (roll < 0.85) targetChamp = "SportBike";
-        // el 15% restante: sin oferta de ascenso esta temporada.
-      } else {
-        targetChamp = "Moto3";
-      }
     // Ninguna oferta de Moto2 puede llegar antes de los 18 años, por muy
     // bien que vaya la temporada — ni siquiera con un ascenso meteórico.
     } else if (state.championship === "Moto3") {
@@ -1117,21 +1090,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // 1. Margen de mejora respecto al potencial oculto — el factor con más
   // peso. Un piloto lejos de su techo puede pegar un buen salto aunque
   // no gane nada; uno que ya casi lo ha tocado apenas se mueve.
-  let room = clamp((state.potential - state.ovr) / 22, 0, 1.5);
-  // AJUSTE (14ª pasada): el multiplicador de categoría (más abajo, 1.30)
-  // no basta por sí solo cuando "room" ya está casi a cero — multiplicar
-  // por 1.30 algo que ya es prácticamente 0 sigue siendo prácticamente 0,
-  // así que la media se quedaba plana en Moto2/Supersport en cuanto el
-  // piloto se acercaba a su potencial oculto (algo muy habitual justo en
-  // ese nivel, para la mayoría de perfiles). Se garantiza un margen mínimo
-  // específicamente en estas dos categorías, para que siempre quede algo
-  // de recorrido de mejora y la media no se aplane del todo — sigue
-  // habiendo diferencias reales según el techo oculto de cada piloto
-  // (quien tenga más margen sigue creciendo más), solo deja de llegar a
-  // cero.
-  if (state.championship === "Moto2" || state.championship === "Supersport") {
-    room = Math.max(room, 0.35);
-  }
+  const room = clamp((state.potential - state.ovr) / 22, 0, 1.5);
   // AJUSTE DE DIFICULTAD (pizca, segunda pasada): multiplicador base un
   // poco más alto todavía (antes 1.42) — conseguir cosas buenas debe notarse
   // más en el OVR, sin dejar de depender del perfil oculto y la curva.
@@ -1144,17 +1103,6 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // (los "muy top"), no a cualquiera que se vaya acercando a su techo.
   const highOvrWall = state.ovr >= 85 ? clamp(1 - (state.ovr - 85) / 10, 0.15, 1) : 1;
   base *= highOvrWall;
-
-  // AJUSTE (8ª pasada): Moto2 y Supersport cuestan bastante más de lo que
-  // deberían — sin tocar el nivel de esas categorías (FIELD), se sube un
-  // pelín el ritmo de progresión del piloto específicamente ahí. Poco,
-  // solo un empujón, no una barbaridad. AJUSTE (12ª pasada): seguían
-  // estancándose demasiadas carreras en Moto2 con el +15%, así que se
-  // sube otro escalón (1.15 → 1.30). AJUSTE (17ª pasada): de temporada en
-  // temporada en Moto2 solo se veía +0 o +1 casi siempre — se sube un
-  // pelín más, específicamente en Moto2 (Supersport se queda en 1.30).
-  if (state.championship === "Moto2") base *= 1.42; // AJUSTE (17ª pasada): 1.30 → 1.42 (solo Moto2)
-  else if (state.championship === "Supersport") base *= 1.30;
 
   // 1b. Impulso de novato: los primeros años en Moto3 (16-18 años) suelen
   // ser de aprendizaje muy rápido en la vida real — se nota incluso en los
@@ -1232,19 +1180,6 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // solo se recorta a +2 el 22% de las veces, antes 32%).
   if (rounded === 3 && eventKind !== "positive" && Math.random() < 0.22) rounded = 2;
 
-  // AJUSTE (15ª pasada): antes de los 28 años, bajar de media de una
-  // temporada a otra sin ningún motivo narrativo (solo ruido/rendimiento
-  // flojo puntual, sin evento de por medio) pasaba con bastante
-  // frecuencia — se notaba sobre todo en Moto2. Sigue pudiendo pasar (es
-  // parte de la aleatoriedad del juego, y de vez en cuando toca), pero
-  // ahora la mayoría de esas caídas "silenciosas" se quedan en 0 en vez de
-  // restar. Los eventos negativos explícitos (lesión, mal encaje en el
-  // cambio de categoría...) no se tocan — esos ya tienen un motivo visible
-  // en el historial, no son el problema.
-  if (state.age < 28 && rounded < 0 && eventKind === null && Math.random() < 0.65) {
-    rounded = 0;
-  }
-
   // 7. Plus por dar el salto a una categoría exigente: al entrar por
   // primera vez en MotoGP o en WorldSBK (Superbikes) se suma un +2 de OVR
   // FIJO, además de toda la subida "normal" ya calculada arriba, para que
@@ -1263,7 +1198,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // con más techo llegan más arriba del rango, no todos igual).
   if (categoryChanged && JUNIOR_CHAMPS.includes(previousChampionship) &&
       (state.championship === "Moto3" || state.championship === "SportBike")) {
-    const targetOvr = clamp(randInt(56, 69) + Math.round((p.potential - 85) / 8), 50, 74);
+    const targetOvr = clamp(randInt(62, 75) + Math.round((p.potential - 85) / 8), 56, 80);
     const projectedOvr = state.ovr + rounded;
     const jump = clamp(targetOvr - projectedOvr, 0, 26);
     rounded += Math.round(jump);
@@ -1286,23 +1221,29 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
 
   const w = CATEGORY_WEIGHTS[state.championship] || CATEGORY_WEIGHTS.Moto3;
 
+  const seasonsInChampNow = state.seasonsInChamp || 1;
+  const isRookieSeason = seasonsInChampNow === 1;
+  const isSophomoreSeason = seasonsInChampNow === 2;
+
   // AJUSTE (3ª pasada): la primerísima temporada de la carrera (16 años,
   // en la fase de formación) ya no resta nada al rating — antes restaba 1
   // punto por el "shock" de la primera vez en pista; ahora es un pelín
   // más fácil. El estreno en Moto3 recién graduado de la fase júnior suma,
   // en cambio, un pequeño empujón de forma (+2) — aparte de todo lo que ya
-  // aporta el salto de OVR de la graduación — porque en la práctica se
-  // estaba quedando un poco corto. AJUSTE (4ª pasada): +2 → +3.
+  // aporta el salto de OVR de la graduación.
   const isMoto3RookieSeason = categoryChanged && state.championship === "Moto3" &&
     JUNIOR_CHAMPS.includes(previousChampionship);
-  // AJUSTE (9ª pasada): el salto de Moto3 a Moto2 costaba demasiado,
-  // sobre todo el primer año — mismo empujón de forma (+3) que el estreno
-  // en Moto3, pero SIN tocar el nivel de la categoría (FIELD.Moto2 se
-  // queda igual).
-  const isMoto2RookieSeason = categoryChanged && state.championship === "Moto2" &&
-    previousChampionship === "Moto3";
-  const playerRating = state.ovr * w.rider + state.team.strength * w.team +
-    (isMoto3RookieSeason ? 3 : 0) + (isMoto2RookieSeason ? 3 : 0);
+  // AJUSTE (5ª pasada): en Moto2 y Moto3 la primera temporada ya no se
+  // "frena" recortando el resultado ya calculado — en vez de eso, se hace
+  // un pelín más difícil de entrada, con un pequeño descuento de rating.
+  // Ganar o hacer podio sigue siendo posible según el desarrollo normal de
+  // la temporada (dentro de la probabilidad), solo que un poco menos
+  // probable, igual que quedar 2º, etc.
+  const isMotoStepUpRookie = isRookieSeason &&
+    (state.championship === "Moto2" || state.championship === "Moto3");
+  const playerRating = state.ovr * w.rider + state.team.strength * w.team
+    + (isMoto3RookieSeason ? 2 : 0)
+    - (isMotoStepUpRookie ? 6 : 0);
 
   // Nivel base de cada rival para toda la temporada (su sitio dentro del
   // pelotón), heredado (con una ligera deriva) de la temporada anterior.
@@ -1347,25 +1288,15 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
     finishers.sort((a, b) => b.perf - a.perf);
 
     // Si hoy tocaba ganar pero el piloto no es realmente de los 3 mejores
-    // de la temporada, la mayoría de esas veces se queda en podio (o cerca)
+    // de la temporada, la mayoría de esas veces se queda en un podio (2º)
     // en vez de una victoria — ganar de verdad sigue siendo cosa de los
     // pilotos top, aunque de vez en cuando pase la sorpresa. En Moto2 y
     // Moto3 esa sorpresa es algo más frecuente (ajuste de dificultad).
     if (finishers[0].idx === -1 && !isTopTier) {
-      let demoteChance = (state.championship === "Moto2" || state.championship === "Moto3") ? 0.4 : 0.55;
-      // AJUSTE (3ª pasada): en el estreno en Moto3 tras la fase júnior,
-      // un pelín menos propenso a que una victoria "de mérito" se rebaje
-      // a podio. AJUSTE (9ª pasada): mismo trato para el estreno en Moto2.
-      if (isMoto3RookieSeason || isMoto2RookieSeason) demoteChance -= 0.05;
+      const demoteChance = (state.championship === "Moto2" || state.championship === "Moto3") ? 0.4 : 0.55;
       if (Math.random() < demoteChance) {
         const winner = finishers.shift();
-        // AJUSTE (16ª pasada): el reparto 50/30/20 entre 2º-4º (ver 12ª
-        // pasada) seguía dejando el 2º puesto demasiado por encima de
-        // los demás — se reparte más uniforme entre 2º y 5º para que la
-        // concentración en el 2º puesto baje más.
-        const r = Math.random();
-        const insertAt = r < 0.35 ? 1 : r < 0.60 ? 2 : r < 0.80 ? 3 : 4; // 35% 2º, 25% 3º, 20% 4º, 20% 5º
-        finishers.splice(insertAt, 0, winner);
+        finishers.splice(1, 0, winner);
       }
     }
 
@@ -1393,39 +1324,44 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // corona a la primera. Si el resultado bruto de la temporada da campeón,
   // la mayoría de las veces (85%) se "amortigua" a un resultado igualmente
   // brillante (2º o 3º) en vez de la corona — sigue siendo una temporada de
-  // debut sobresaliente, solo que no el título. A partir del segundo año en
-  // la misma categoría la probabilidad de ser campeón queda intacta.
-  const isRookieSeason = (state.seasonsInChamp || 1) === 1;
-  // AJUSTE (3ª pasada): el amortiguado normal de temporada de debut (85% /
-  // 80%, y un 4º-9º si no eres de los mejores) se suaviza un pelín
-  // específicamente en el estreno en Moto3 tras la fase júnior — un poco
-  // menos de probabilidad de recortar el resultado (el rango de
-  // "consuelo", 4º-9º, se mantiene igual). AJUSTE (4ª pasada): un pelín
-  // más, 0.80/0.75 → 0.77/0.72. AJUSTE (9ª pasada): mismo trato para el
-  // estreno en Moto2 tras Moto3.
-  const champDampChance = (isMoto3RookieSeason || isMoto2RookieSeason) ? 0.77 : 0.85;
-  const top3DampChance = (isMoto3RookieSeason || isMoto2RookieSeason) ? 0.72 : 0.80;
+  // debut sobresaliente, solo que no el título. A partir del tercer año en
+  // la misma categoría la probabilidad de ser campeón queda intacta (la
+  // segunda temporada es una transición a medias, ver isSophomoreSeason).
+  // AJUSTE (5ª pasada): en Moto2 y Moto3 este amortiguado ya NO se aplica
+  // — su primera temporada se hace más difícil con el descuento de rating
+  // de arriba, no recortando el resultado ya jugado.
+  let champDampChance = 0;
+  let top3DampChance = 0;
   const top3DampRange = [4, 9];
-  // FALLO CORREGIDO (11ª pasada): estas dos comprobaciones estaban
-  // encadenadas como dos "if" independientes, así que un debutante no-top-
-  // tier que quedaba 1º en bruto podía amortiguarse primero a 2º/3º y
-  // LUEGO, sobre ese mismo resultado ya rebajado, volver a amortiguarse
-  // una segunda vez hasta 4º-9º — un doble recorte en cascada que un 2º o
-  // 3º genuino (en bruto) nunca sufría, porque solo pasaba por el segundo
-  // chequeo una vez. Eso sesgaba los resultados de forma rara. Con
-  // "else if" cada temporada de debut solo puede amortiguarse una vez.
-  if (isRookieSeason && champPosition === 1 && Math.random() < champDampChance) {
+  if (!isMotoStepUpRookie) {
+    if (isRookieSeason) {
+      champDampChance = isMoto3RookieSeason ? 0.80 : 0.85;
+      top3DampChance = isMoto3RookieSeason ? 0.75 : 0.80;
+    } else if (isSophomoreSeason) {
+      champDampChance = 0.35;
+      top3DampChance = 0.30;
+    }
+  }
+  if (champPosition === 1 && Math.random() < champDampChance) {
     champPosition = randInt(2, 3);
-  } else if (isRookieSeason && champPosition <= 3 && !isTopTier && Math.random() < top3DampChance) {
-    // Además de amortiguar el título, un debutante que NO es de verdad uno
-    // de los mejores del pelotón esa temporada (ver isTopTier, calculado
-    // antes de disputar las carreras) rara vez debe firmar una temporada
-    // de debut entre los 3 primeros solo por el azar del campeonato — eso
-    // hay que ganárselo siendo un piloto top. La mayoría de esas veces el
-    // resultado se "amortigua" a una posición más realista para un
-    // debutante, aunque la temporada siga contando como sólida.
+  }
+
+  // Además de amortiguar el título, un debutante que NO es de verdad uno de
+  // los mejores del pelotón esa temporada (ver isTopTier, calculado antes
+  // de disputar las carreras) rara vez debe firmar una temporada de debut
+  // entre los 3 primeros solo por el azar del campeonato — eso hay que
+  // ganárselo siendo un piloto top. La mayoría de esas veces el resultado
+  // se "amortigua" a una posición más realista para un debutante, aunque
+  // la temporada siga contando como sólida.
+  if (champPosition <= 3 && !isTopTier && Math.random() < top3DampChance) {
     champPosition = randInt(top3DampRange[0], top3DampRange[1]);
   }
+
+  // AJUSTE (4ª pasada, revertido en la 5ª): la redistribución fija a
+  // posiciones concretas (3º-4º con hueco para 1º/5º/9º) se ha quitado —
+  // en Moto2 y Moto3 el resultado de la primera temporada sale ahora
+  // directamente de la simulación de la temporada (ya con el rating un
+  // poco más bajo de arriba), sin ningún reajuste posterior.
 
   const isChampion = champPosition === 1;
 
