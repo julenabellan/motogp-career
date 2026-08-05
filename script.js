@@ -798,12 +798,15 @@ function generateMarketOffers() {
     if (state.championship === "MotoJunior" || state.championship === "RedBullRookies") {
       targetChamp = "Moto3";
     } else if (state.championship === "YamahaR3Cup") {
-      // Si queda entre 2º y 4º (top 4 pero sin ser campeón), hay una
-      // probabilidad media de que la vía sea Stock600 en vez de SportBike;
+      // Si queda entre 2º y 4º (top 4 pero sin ser campeón), hay
+      // probabilidad de que la vía sea Stock600 en vez de SportBike;
       // siendo campeón, o fuera del top 4, la vía sigue siendo la de
-      // siempre (SportBike).
-      const top4NotChamp = lastSeason && lastSeason.pos >= 2 && lastSeason.pos <= 4;
-      targetChamp = (top4NotChamp && Math.random() < 0.45) ? "Stock600" : "SportBike";
+      // siempre (SportBike). AJUSTE (pelín más Stock600): quedando 2º, las
+      // dos vías pesan exactamente igual (50/50); quedando 3º o 4º, la
+      // probabilidad de Stock600 también sube un poco respecto a antes.
+      const pos = lastSeason && lastSeason.pos;
+      const stockChance = pos === 2 ? 0.50 : (pos === 3 || pos === 4) ? 0.42 : 0;
+      targetChamp = (stockChance > 0 && Math.random() < stockChance) ? "Stock600" : "SportBike";
     // Ninguna oferta de Moto2 puede llegar antes de los 18 años, por muy
     // bien que vaya la temporada — ni siquiera con un ascenso meteórico.
     } else if (state.championship === "Moto3") {
@@ -951,11 +954,14 @@ function generateMarketOffers() {
   if ((state.championship === "MotoJunior" || state.championship === "RedBullRookies") &&
       state.age >= 18 && !targetChamp) {
     const r = Math.random();
+    // AJUSTE (pelín más Stock600): la ventana de Stock600 sube de 35% a
+    // 38%, quitándoselo al "sigue un año más" (que baja de 20% a 17%) en
+    // vez de a SportBike, que se queda igual.
     if (r < 0.10) {
       juniorStuck18Pick = { team: pickTeamByStrength("Moto3", 50, 55), championship: "Moto3" };
-    } else if (r < 0.45) {
+    } else if (r < 0.48) {
       juniorStuck18Pick = { team: pickTeamByStrength("Stock600", 46, 54), championship: "Stock600" };
-    } else if (r < 0.80) {
+    } else if (r < 0.83) {
       juniorStuck18Pick = { team: pickTeamByStrength("SportBike", 46, 54), championship: "SportBike" };
     }
     // El 20% restante: sigue un año más en la categoría júnior, sin vía especial.
@@ -1010,7 +1016,7 @@ function generateMarketOffers() {
   // Stock600 como vía alternativa de nivel similar.
   let spbToStock600Pick = null;
   if (state.championship === "SportBike" && lastSeason && lastSeason.pos > 6 &&
-      Math.random() < 0.28) {
+      Math.random() < 0.32) { // AJUSTE (pelín más Stock600): 0.28 → 0.32
     spbToStock600Pick = { team: pickTeamByStrength("Stock600", 46, 54), championship: "Stock600" };
   }
 
