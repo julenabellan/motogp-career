@@ -871,10 +871,10 @@ function generateMarketOffers() {
         moto2StuckPick = pickGuaranteedNationalOffer(55, 70);
       } else if (r < 0.36) {
         moto2StuckPick = { team: pickTeamByStrength("Supersport", 67, 74), championship: "Supersport" };
-      } else if (r < 0.52) {
+      } else if (r < 0.59) { // AJUSTE: 0.56 → 0.59 (ancho 20% → 23%)
         moto2StuckPick = { team: pickTeamByStrength("Moto2Euro", 55, 62), championship: "Moto2Euro" };
       }
-      // El resto (48%): se queda en Moto2, sin vía especial esta temporada.
+      // El resto (41%): se queda en Moto2, sin vía especial esta temporada.
     }
   }
 
@@ -887,14 +887,28 @@ function generateMarketOffers() {
     sspPick = { team: pickTeamByStrength("Supersport", 68, 73), championship: "Supersport" };
   }
 
-  // Piloto de Moto3 que "cumple" pero no destaca (fuera del Top 3 a partir
-  // de su 3ª temporada en la categoría): con menos frecuencia que el caso
+  // Piloto de Moto3 que "cumple" pero no destaca (fuera del Top 5 a partir
+  // de su 2ª temporada en la categoría): con menos frecuencia que el caso
   // equivalente en Moto2 (ver moto2StuckPick), también puede llegarle una
   // oferta del Europeo de Moto2 como vía alternativa.
   let moto3ToEuroPick = null;
-  if (state.championship === "Moto3" && tenure >= 3 && lastSeason && lastSeason.pos > 3 &&
-      Math.random() < 0.10) {
+  if (state.championship === "Moto3" && tenure >= 2 && lastSeason && lastSeason.pos > 5 &&
+      Math.random() < 0.16) { // AJUSTE: 3ª temp/top3/10% → 2ª temp/top5/16%
     moto3ToEuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 61), championship: "Moto2Euro" };
+  }
+
+  // Dos temporadas SEGUIDAS fuera del Top 4 en Moto3 (independientemente
+  // de la edad y de cuánto tiempo lleve ya en la categoría): motivo aparte
+  // para que, con cierta probabilidad — no siempre, pero real — también le
+  // pueda llegar una oferta del Europeo de Moto2. Es una vía distinta e
+  // independiente de moto3ToEuroPick (esa exige 2ª temporada o más y solo
+  // mira la última); esta mira directamente las 2 últimas, sin más
+  // condición que esa racha.
+  let moto3TwoSeasonsEuroPick = null;
+  const moto3StuckTop4 = state.championship === "Moto3" && state.history.length >= 2 &&
+    state.history.slice(-2).every((s) => s.championship === "Moto3" && s.pos > 4);
+  if (moto3StuckTop4 && Math.random() < 0.25) {
+    moto3TwoSeasonsEuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 61), championship: "Moto2Euro" };
   }
 
   // Posibilidad MÍNIMA de saltar directamente desde la fase de formación
@@ -904,8 +918,17 @@ function generateMarketOffers() {
   // vías hacia esta categoría.
   let juniorToEuroPick = null;
   if ((state.championship === "MotoJunior" || state.championship === "RedBullRookies") &&
-      lastSeason && lastSeason.pos <= 3 && Math.random() < 0.05) {
+      lastSeason && lastSeason.pos <= 3 && Math.random() < 0.07) { // AJUSTE: 0.05 → 0.07
     juniorToEuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 60), championship: "Moto2Euro" };
+  }
+
+  // Piloto de Supersport que queda 5º o peor, a partir de su 2ª temporada
+  // en la categoría, independientemente de la edad: también puede
+  // llegarle alguna oferta del Europeo de Moto2 como vía alternativa.
+  let sspToEuroPick = null;
+  if (state.championship === "Supersport" && tenure >= 2 && lastSeason && lastSeason.pos >= 5 &&
+      Math.random() < 0.13) {
+    sspToEuroPick = { team: pickTeamByStrength("Moto2Euro", 56, 62), championship: "Moto2Euro" };
   }
 
   // Salto de Supersport a Moto2: la vía normal desde Supersport es subir a
@@ -938,7 +961,7 @@ function generateMarketOffers() {
   // no la sustituye.
   let spbToMoto2EuroPick = null;
   if (state.championship === "SportBike" &&
-      lastSeason && (lastSeason.pos === 1 || lastSeason.cg >= 4) && Math.random() < 0.10) {
+      lastSeason && (lastSeason.pos === 1 || lastSeason.cg >= 4) && Math.random() < 0.13) { // AJUSTE: 0.10 → 0.13
     spbToMoto2EuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 60), championship: "Moto2Euro" };
   }
 
@@ -1107,7 +1130,9 @@ function generateMarketOffers() {
   if (spbToMoto3Pick) picks.push(spbToMoto3Pick);
   if (moto2StuckPick) picks.push(moto2StuckPick);
   if (moto3ToEuroPick) picks.push(moto3ToEuroPick);
+  if (moto3TwoSeasonsEuroPick) picks.push(moto3TwoSeasonsEuroPick);
   if (juniorToEuroPick) picks.push(juniorToEuroPick);
+  if (sspToEuroPick) picks.push(sspToEuroPick);
   if (spbToMoto2EuroPick) picks.push(spbToMoto2EuroPick);
   if (moto2EuroExitPick) picks.push(moto2EuroExitPick);
   if (demotionPick) picks.push(demotionPick);
