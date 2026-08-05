@@ -37,6 +37,7 @@ const CHAMP_LABELS = {
   RedBullRookies: "Red Bull Rookies Cup",
   YamahaR3Cup: "Yamaha R3 Cup",
   Moto2Euro: "Europeo de Moto2",
+  Stock600: "Stock 600",
 };
 function champLabel(key) {
   return CHAMP_LABELS[key] || key;
@@ -191,6 +192,21 @@ const TEAMS = {
     { name: "MMR Aprilia",               strength: 48, color: "#810098", logo: "MMR"        },
     { name: "Kove Racing Team 109",      strength: 46, color: "#01beb7", logo: "Kove"       },
     { name: "Wixx Racing Suzuki",        strength: 22, color: "#ce0012", logo: "WixxSuzuki" },
+  ],
+  // Stock 600 — vía alternativa de nivel intermedio, por debajo del
+  // Europeo de Moto2 y aproximadamente al nivel de SportBike. No es un
+  // escalón "obligatorio" de ninguna escalera: es más bien una salida de
+  // emergencia (o una segunda vía de acceso) para pilotos de la fase
+  // júnior, de Yamaha R3 Cup o de SportBike a los que el camino normal no
+  // les está saliendo bien. Monomarca a efectos prácticos — los 4 equipos
+  // corren con Yamaha — así que el equipo pesa poco (ver CATEGORY_WEIGHTS
+  // en script.js), aunque sí hay 4 escuadras distintas entre las que
+  // elegir, a diferencia de Red Bull Rookies o Yamaha R3 Cup.
+  Stock600: [
+    { name: "Yamaha MS Racing",           strength: 54, color: "#21409a", logo: "YamahaMS"      },
+    { name: "GRT Yamaha Racing",          strength: 51, color: "#21409a", logo: "GRTYamaha"      },
+    { name: "Yamaha PJ Motorsport",       strength: 49, color: "#21409a", logo: "YamahaPJ"       },
+    { name: "Yamaha Finance Racing Team", strength: 46, color: "#21409a", logo: "YamahaFinance"  },
   ],
 };
 
