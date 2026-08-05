@@ -41,6 +41,11 @@ const FIELD = {
   ESBK:       { mean: 60, sd: 12 },
   BSB:        { mean: 63, sd: 12 },
   CIV:        { mean: 59, sd: 12 },
+  // Stock 600: vía alternativa de nivel intermedio — por debajo del
+  // Europeo de Moto2, aproximadamente a la altura de SportBike (algo por
+  // debajo, ya que recibe tanto a pilotos de la fase júnior que aún no
+  // han despegado como a pilotos de SportBike que no destacan).
+  Stock600:   { mean: 50, sd: 13 },
 };
 const GRID_RIVALS = 23; // resto de la parrilla (24 pilotos en total en el campeonato)
 
@@ -793,7 +798,12 @@ function generateMarketOffers() {
     if (state.championship === "MotoJunior" || state.championship === "RedBullRookies") {
       targetChamp = "Moto3";
     } else if (state.championship === "YamahaR3Cup") {
-      targetChamp = "SportBike";
+      // Si queda entre 2º y 4º (top 4 pero sin ser campeón), hay una
+      // probabilidad media de que la vía sea Stock600 en vez de SportBike;
+      // siendo campeón, o fuera del top 4, la vía sigue siendo la de
+      // siempre (SportBike).
+      const top4NotChamp = lastSeason && lastSeason.pos >= 2 && lastSeason.pos <= 4;
+      targetChamp = (top4NotChamp && Math.random() < 0.45) ? "Stock600" : "SportBike";
     // Ninguna oferta de Moto2 puede llegar antes de los 18 años, por muy
     // bien que vaya la temporada — ni siquiera con un ascenso meteórico.
     } else if (state.championship === "Moto3") {
@@ -931,6 +941,26 @@ function generateMarketOffers() {
     juniorToEuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 60), championship: "Moto2Euro" };
   }
 
+  // Piloto de FIM JuniorGP / Red Bull Rookies Cup que a los 18 años sigue
+  // sin subir a Moto3 (no ha habido ascenso normal esta temporada): en vez
+  // de dejarlo estancado sin más, el mercado reparte al azar entre 4
+  // caminos — un pequeño margen de llegar igualmente a Moto3, la vía
+  // lateral a Stock600 o a SportBike (las dos más probables), o
+  // simplemente seguir un año más en la categoría júnior.
+  let juniorStuck18Pick = null;
+  if ((state.championship === "MotoJunior" || state.championship === "RedBullRookies") &&
+      state.age >= 18 && !targetChamp) {
+    const r = Math.random();
+    if (r < 0.10) {
+      juniorStuck18Pick = { team: pickTeamByStrength("Moto3", 50, 55), championship: "Moto3" };
+    } else if (r < 0.45) {
+      juniorStuck18Pick = { team: pickTeamByStrength("Stock600", 46, 54), championship: "Stock600" };
+    } else if (r < 0.80) {
+      juniorStuck18Pick = { team: pickTeamByStrength("SportBike", 46, 54), championship: "SportBike" };
+    }
+    // El 20% restante: sigue un año más en la categoría júnior, sin vía especial.
+  }
+
   // Piloto de Supersport que queda 5º o peor, a partir de su 2ª temporada
   // en la categoría, independientemente de la edad: también puede
   // llegarle alguna oferta del Europeo de Moto2 como vía alternativa.
@@ -972,6 +1002,42 @@ function generateMarketOffers() {
   if (state.championship === "SportBike" &&
       lastSeason && (lastSeason.pos === 1 || lastSeason.cg >= 4) && Math.random() < 0.13) { // AJUSTE: 0.10 → 0.13
     spbToMoto2EuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 60), championship: "Moto2Euro" };
+  }
+
+  // Piloto de SportBike que queda fuera del top 6 del campeonato: aparte
+  // de la vía normal (quedarse o, si la temporada es buena, ascender a
+  // Supersport), existe una probabilidad de que le llegue una oferta de
+  // Stock600 como vía alternativa de nivel similar.
+  let spbToStock600Pick = null;
+  if (state.championship === "SportBike" && lastSeason && lastSeason.pos > 6 &&
+      Math.random() < 0.28) {
+    spbToStock600Pick = { team: pickTeamByStrength("Stock600", 46, 54), championship: "Stock600" };
+  }
+
+  // Salida de Stock600, según cómo termine la temporada:
+  //  - Campeón: sí o sí, oferta del Europeo de Moto2.
+  //  - 2º: probabilidad media de la misma oferta; si no, se queda.
+  //  - 25 años o más (y no ha sido ni 1º ni 2º esta vez): normalmente se le
+  //    manda hacia un campeonato nacional, con una pequeña posibilidad de
+  //    que sea Supersport en su lugar — o, la mayoría de las veces que no
+  //    se activa ninguna de las dos, simplemente sigue en Stock600.
+  let stock600ExitPick = null;
+  if (state.championship === "Stock600" && lastSeason) {
+    if (lastSeason.pos === 1) {
+      stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 58, 64), championship: "Moto2Euro" };
+    } else if (lastSeason.pos === 2 && Math.random() < 0.40) {
+      stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 56, 62), championship: "Moto2Euro" };
+    }
+  }
+  let stock600VeteranPick = null;
+  let stock600VeteranSspPick = null;
+  if (state.championship === "Stock600" && state.age >= 25 && !stock600ExitPick &&
+      Math.random() < 0.55) {
+    if (Math.random() < 0.15) {
+      stock600VeteranSspPick = { team: pickTeamByStrength("Supersport", 66, 72), championship: "Supersport" };
+    } else {
+      stock600VeteranPick = pickGuaranteedNationalOffer(50, 64);
+    }
   }
 
   // Descenso de categoría: si llevas dos temporadas seguidas hundido en la
@@ -1141,8 +1207,13 @@ function generateMarketOffers() {
   if (moto3ToEuroPick) picks.push(moto3ToEuroPick);
   if (moto3TwoSeasonsEuroPick) picks.push(moto3TwoSeasonsEuroPick);
   if (juniorToEuroPick) picks.push(juniorToEuroPick);
+  if (juniorStuck18Pick) picks.push(juniorStuck18Pick);
   if (sspToEuroPick) picks.push(sspToEuroPick);
   if (spbToMoto2EuroPick) picks.push(spbToMoto2EuroPick);
+  if (spbToStock600Pick) picks.push(spbToStock600Pick);
+  if (stock600ExitPick) picks.push(stock600ExitPick);
+  if (stock600VeteranPick) picks.push(stock600VeteranPick);
+  if (stock600VeteranSspPick) picks.push(stock600VeteranSspPick);
   if (moto2EuroExitPick) picks.push(moto2EuroExitPick);
   if (demotionPick) picks.push(demotionPick);
   if (stagnationPick) picks.push(stagnationPick);
@@ -1246,6 +1317,11 @@ const CATEGORY_WEIGHTS = {
   ESBK:       { rider: 0.81, team: 0.19 },
   BSB:        { rider: 0.81, team: 0.19 },
   CIV:        { rider: 0.81, team: 0.19 },
+  // Stock 600: 4 equipos, todos con moto Yamaha (a efectos prácticos, casi
+  // monomarca), así que el equipo pesa poco — parecido a Rookies/R3 Cup,
+  // aunque no tan extremo, porque sí hay 4 escuadras distintas entre las
+  // que elegir.
+  Stock600:   { rider: 0.90, team: 0.10 },
 };
 
 // ------------------------------------------------------------
@@ -1684,7 +1760,7 @@ function retireCareer() {
   });
   const CHAMP_ORDER = [
     "MotoJunior", "RedBullRookies", "YamahaR3Cup",
-    "SportBike", "Moto3", "Supersport", "Moto2",
+    "SportBike", "Stock600", "Moto3", "Supersport", "Moto2Euro", "Moto2",
     "ESBK", "BSB", "CIV", "WorldSBK", "MotoGP",
   ];
   const titlesBreakdown = CHAMP_ORDER
