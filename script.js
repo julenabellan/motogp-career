@@ -29,6 +29,9 @@ const FIELD = {
   Moto3:      { mean: 59, sd: 13 },
   Moto2:      { mean: 69, sd: 13 },
   MotoGP:     { mean: 81, sd: 11 },
+  // Europeo de Moto2 (FIM Moto2 European Championship): vía alternativa a
+  // la subida directa Moto3→Moto2, con un nivel intermedio entre ambas.
+  Moto2Euro:  { mean: 61, sd: 13 },
   SportBike:  { mean: 56, sd: 13 },
   Supersport: { mean: 66, sd: 12 },
   WorldSBK:   { mean: 75, sd: 11 },
@@ -850,15 +853,29 @@ function generateMarketOffers() {
   if (state.championship === "MotoGP" && state.age >= 32 && !lastGood) {
     const [lo, hi] = state.ovr >= 85 ? [76, 82] : [69, 77];
     wsbkPick = { team: pickTeamByStrength("WorldSBK", lo, hi), championship: "WorldSBK" };
-  } else if (state.championship === "Moto2" && lastSeason && lastSeason.pos >= 4 && !targetChamp) {
-    const lateralRoll = Math.random();
-    if (lateralRoll < 0.40) {
-      wsbkPick = { team: pickTeamByStrength("WorldSBK", 69, 76), championship: "WorldSBK" }; // equipo mediano
-    } else if (lateralRoll < 0.48) {
-      wsbkPick = { team: pickTeamByStrength("Supersport", 68, 74), championship: "Supersport" }; // poco frecuente
+  }
+
+  // Piloto de Moto2 que no triunfa (fuera del Top 5) a partir de su 2ª o 3ª
+  // temporada en la categoría (el umbral varía cada vez, para que no sea
+  // siempre el mismo punto de corte): el mercado reparte, al azar, entre 4
+  // caminos — un campeonato nacional, el salto lateral a Supersport, la
+  // vía del Europeo de Moto2, o simplemente quedarse en Moto2 (lo más
+  // habitual, relleno luego con sameLevelCandidates). Las proporciones
+  // varían de tirada en tirada, así que ninguna partida se siente igual.
+  let moto2StuckPick = null;
+  if (state.championship === "Moto2" && !targetChamp && lastSeason && lastSeason.pos > 5) {
+    const stuckGate = tenure >= (Math.random() < 0.5 ? 2 : 3);
+    if (stuckGate) {
+      const r = Math.random();
+      if (r < 0.18) {
+        moto2StuckPick = pickGuaranteedNationalOffer(55, 70);
+      } else if (r < 0.36) {
+        moto2StuckPick = { team: pickTeamByStrength("Supersport", 67, 74), championship: "Supersport" };
+      } else if (r < 0.52) {
+        moto2StuckPick = { team: pickTeamByStrength("Moto2Euro", 55, 62), championship: "Moto2Euro" };
+      }
+      // El resto (48%): se queda en Moto2, sin vía especial esta temporada.
     }
-    // El resto de las veces (52%) no hay vía lateral esta temporada: el
-    // hueco se rellena con otro equipo de Moto2 (sameLevelCandidates).
   }
 
   // Salida lateral a Supersport: piloto de Moto3 que no destaca (temporada
@@ -868,6 +885,27 @@ function generateMarketOffers() {
   let sspPick = null;
   if (state.championship === "Moto3" && !lastGood) {
     sspPick = { team: pickTeamByStrength("Supersport", 68, 73), championship: "Supersport" };
+  }
+
+  // Piloto de Moto3 que "cumple" pero no destaca (fuera del Top 3 a partir
+  // de su 3ª temporada en la categoría): con menos frecuencia que el caso
+  // equivalente en Moto2 (ver moto2StuckPick), también puede llegarle una
+  // oferta del Europeo de Moto2 como vía alternativa.
+  let moto3ToEuroPick = null;
+  if (state.championship === "Moto3" && tenure >= 3 && lastSeason && lastSeason.pos > 3 &&
+      Math.random() < 0.10) {
+    moto3ToEuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 61), championship: "Moto2Euro" };
+  }
+
+  // Posibilidad MÍNIMA de saltar directamente desde la fase de formación
+  // (FIM JuniorGP / Red Bull Rookies Cup) al Europeo de Moto2, sin pasar
+  // por Moto3, si la temporada ha sido excepcional (podio del campeonato).
+  // Es una rareza a propósito, bastante menos frecuente que el resto de
+  // vías hacia esta categoría.
+  let juniorToEuroPick = null;
+  if ((state.championship === "MotoJunior" || state.championship === "RedBullRookies") &&
+      lastSeason && lastSeason.pos <= 3 && Math.random() < 0.05) {
+    juniorToEuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 60), championship: "Moto2Euro" };
   }
 
   // Salto de Supersport a Moto2: la vía normal desde Supersport es subir a
@@ -892,6 +930,16 @@ function generateMarketOffers() {
   if (state.championship === "SportBike" &&
       lastSeason && (lastSeason.pos === 1 || lastSeason.cg >= 4) && Math.random() < 0.12) {
     spbToMoto3Pick = { team: pickTeamByStrength("Moto3", 50, 55), championship: "Moto3" };
+  }
+
+  // Además del salto (raro) a Moto3, un piloto destacado de SportBike
+  // también tiene alguna posibilidad de que le llegue una oferta del
+  // Europeo de Moto2 — se suma a su vía normal de ascenso a Supersport,
+  // no la sustituye.
+  let spbToMoto2EuroPick = null;
+  if (state.championship === "SportBike" &&
+      lastSeason && (lastSeason.pos === 1 || lastSeason.cg >= 4) && Math.random() < 0.10) {
+    spbToMoto2EuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 60), championship: "Moto2Euro" };
   }
 
   // Descenso de categoría: si llevas dos temporadas seguidas hundido en la
@@ -920,6 +968,45 @@ function generateMarketOffers() {
     if (target) {
       const cs = state.team.strength;
       stagnationPick = { team: pickTeamByStrength(target, cs - 10, cs + 6), championship: target };
+    }
+  }
+
+  // Salida del Europeo de Moto2, según cómo termine la temporada:
+  //  - Campeón: la vía normal es el ascenso a Moto2 (muy probable), y
+  //    existe una posibilidad menor de saltar directamente a WorldSBK.
+  //  - 2º: alguna posibilidad de Moto2, alguna de Supersport.
+  //  - 3º: Moto2 es difícil (poco probable); Supersport, en cambio, es
+  //    bastante más probable.
+  //  - 4º o peor: lo normal (sobre todo si el piloto es joven) es
+  //    quedarse otra temporada en el Europeo; si no, puede tocarle bajar a
+  //    un campeonato nacional, o (con menos frecuencia) alguna posibilidad
+  //    de Supersport. Cuanto mayor es el piloto, más pesan estas dos
+  //    últimas frente a quedarse.
+  let moto2EuroExitPick = null;
+  if (state.championship === "Moto2Euro" && lastSeason) {
+    const pos = lastSeason.pos;
+    const olderRider = state.age >= 27;
+    if (pos === 1) {
+      const r = Math.random();
+      if (r < 0.75) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 75), championship: "Moto2" };
+      else if (r < 0.90) moto2EuroExitPick = { team: pickTeamByStrength("WorldSBK", 69, 76), championship: "WorldSBK" };
+    } else if (pos === 2) {
+      const r = Math.random();
+      if (r < 0.35) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 73), championship: "Moto2" };
+      else if (r < 0.65) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 68, 74), championship: "Supersport" };
+    } else if (pos === 3) {
+      const r = Math.random();
+      if (r < 0.15) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 71), championship: "Moto2" };
+      else if (r < 0.65) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 67, 73), championship: "Supersport" };
+    } else {
+      const r = Math.random();
+      if (r < (olderRider ? 0.40 : 0.20)) {
+        moto2EuroExitPick = pickGuaranteedNationalOffer(50, 65);
+      } else if (r < (olderRider ? 0.55 : 0.35)) {
+        moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 65, 71), championship: "Supersport" };
+      }
+      // El resto: se queda en el Europeo de Moto2 (más habitual cuanto más
+      // joven es el piloto), sin vía especial esta temporada.
     }
   }
 
@@ -1015,6 +1102,11 @@ function generateMarketOffers() {
   if (nationalPromoSsp) picks.push(nationalPromoSsp);
   if (sspToMoto2Pick) picks.push(sspToMoto2Pick);
   if (spbToMoto3Pick) picks.push(spbToMoto3Pick);
+  if (moto2StuckPick) picks.push(moto2StuckPick);
+  if (moto3ToEuroPick) picks.push(moto3ToEuroPick);
+  if (juniorToEuroPick) picks.push(juniorToEuroPick);
+  if (spbToMoto2EuroPick) picks.push(spbToMoto2EuroPick);
+  if (moto2EuroExitPick) picks.push(moto2EuroExitPick);
   if (demotionPick) picks.push(demotionPick);
   if (stagnationPick) picks.push(stagnationPick);
   nationalPicks.forEach((p) => picks.push(p));
@@ -1110,6 +1202,7 @@ const CATEGORY_WEIGHTS = {
   Moto3:      { rider: 0.83, team: 0.17 },
   Moto2:      { rider: 0.82, team: 0.18 },
   MotoGP:     { rider: 0.65, team: 0.35 },
+  Moto2Euro:  { rider: 0.83, team: 0.17 },
   SportBike:  { rider: 0.84, team: 0.16 },
   Supersport: { rider: 0.79, team: 0.21 },
   WorldSBK:   { rider: 0.72, team: 0.28 },
