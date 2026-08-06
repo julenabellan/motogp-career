@@ -2218,6 +2218,38 @@ function loadState() {
 }
 
 // ============================================================
+// PRECARGA DE LOGOS
+// ============================================================
+// Precarga todos los logos de equipo usados en TEAMS (data.js) para que no
+// haya parpadeo/carga tardía la primera vez que aparecen en una tarjeta de
+// oferta o en el dashboard.
+const logos = [
+  "AGR.png", "ASPAR.png", "ASracing.png", "Advocates.png", "Ajo.png",
+  "Althea.png", "AmericanRacing.png", "Aprilia.png", "ArcoYamaha.png", "Aruba.png",
+  "BMW.png", "BOE.png", "Barni.png", "Bimota.png", "BluCruPramac.png",
+  "BrCorse.png", "Broncos.png", "CIP.png", "CMTriumph.png", "Cardoso.png",
+  "Cerba.png", "Ciatti.png", "DMR.png", "Ducati.png", "EasyRace.png",
+  "EstrellaGalicia.png", "Fantic.png", "Fau55.png", "Feel.png", "GMT94.png",
+  "GV.png", "GYTR.png", "GoEleven.png", "Gresini.png", "GresiniMoto2.png",
+  "HRC.png", "Honda.png", "HondaAsia.png", "IntactGp.png", "Italtrans.png",
+  "JDO.png", "Kawasaki.png", "Klint.png", "Kove.png", "Ktm.png",
+  "Laglisse.png", "Lcr.png", "Leopard.png", "MDR.png", "MGM.png",
+  "MLAV.png", "MMR.png", "MSI.png", "MTA.png", "MTM.png",
+  "MarcVDS.png", "McAms.png", "Momoven.png", "MotoRapido.png", "MotoX.png",
+  "Motocorsa.png", "Motozoo.png", "Niti.png", "Nitrous.png", "Orelac.png",
+  "PBM.png", "PataYamaha.png", "Pons.png", "Pramac.png", "Prodina.png",
+  "QJ.png", "R3Cup.png", "RedBullRookies.png", "Renzi.png", "RevoM2.png",
+  "SNIPERS.png", "Sic58.png", "SpeedUp.png", "StyloBike.png", "Tech3.png",
+  "TenKate.png", "TopSurface.png", "Trackhouse.png", "Triumph.png", "VFT.png",
+  "VLRsuzuki.png", "VR46.png", "WRP.png", "WixxSuzuki.png", "Yamaha.png",
+  "ZXmoto.png",
+];
+logos.forEach(file => {
+  const img = new Image();
+  img.src = `logos/${file}`;
+});
+
+// ============================================================
 // INICIO
 // ============================================================
 if (loadState()) {
