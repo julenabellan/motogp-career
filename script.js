@@ -1126,12 +1126,13 @@ function generateMarketOffers() {
   }
 
   // Salida del Europeo de Moto2, según cómo termine la temporada:
-  //  - Campeón: AJUSTE — 80% Moto2, 15% Supersport directo, 4% WorldSBK, y
-  //    solo un 1% se queda (prácticamente nunca).
-  //  - 2º: AJUSTE — garantizado salir (0% de quedarse): 45% Moto2, 35%
-  //    Supersport, 20% nacional.
-  //  - 3º: AJUSTE — muchas más opciones de salir — 22% Moto2, 50%
-  //    Supersport, 25% nacional, solo 3% se queda.
+  //  - Campeón: AJUSTE — 80% Moto2, 15% Supersport directo, 5% WorldSBK, y
+  //    0% se queda (quitada del todo: ganar el Europeo de Moto2 significa
+  //    salir sí o sí).
+  //  - 2º: garantizado salir (0% de quedarse): 45% Moto2, 35% Supersport,
+  //    20% nacional.
+  //  - 3º: muchas más opciones de salir — 22% Moto2, 50% Supersport, 25%
+  //    nacional, solo 3% se queda.
   //  - 4º o peor: nacional o Supersport, con más peso cuanto mayor es el
   //    piloto (26+); si no, lo normal es quedarse otra temporada. (Sin
   //    cambios.)
@@ -1143,8 +1144,8 @@ function generateMarketOffers() {
       const r = Math.random();
       if (r < 0.80) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 75), championship: "Moto2" };
       else if (r < 0.95) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 69, 75), championship: "Supersport" };
-      else if (r < 0.99) moto2EuroExitPick = { team: pickTeamByStrength("WorldSBK", 69, 76), championship: "WorldSBK" };
-      // el 1% restante: se queda.
+      else moto2EuroExitPick = { team: pickTeamByStrength("WorldSBK", 69, 76), championship: "WorldSBK" };
+      // 0% se queda: ganar el Europeo de Moto2 es sinónimo de irte.
     } else if (pos === 2) {
       const r = Math.random();
       if (r < 0.45) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 73), championship: "Moto2" };
@@ -1246,14 +1247,27 @@ function generateMarketOffers() {
   // Red Bull Rookies Cup y Yamaha R3 Cup son monomarca: no existe otro
   // equipo dentro de la misma categoría al que cambiarse. Si ese año no
   // hay ascenso ni ninguna otra vía especial, se ofrece como alternativa
-  // un equipo de FIM JuniorGP (que sí tiene varios) en vez de dejar el
-  // mercado con menos tarjetas de las esperadas.
-  if (!sameLevelCandidates.length &&
-      (state.championship === "RedBullRookies" || state.championship === "YamahaR3Cup")) {
+  // equipos de otra categoría en vez de dejar el mercado con menos
+  // tarjetas de las esperadas.
+  if (!sameLevelCandidates.length && state.championship === "RedBullRookies") {
+    // Red Bull Rookies apunta a Moto3: la alternativa natural es FIM
+    // JuniorGP (misma escalera de motos).
     sameLevelCandidates.push(
       ...TEAMS.MotoJunior.map((t) => ({ team: t, championship: "MotoJunior" }))
         .sort(() => Math.random() - 0.5)
     );
+  } else if (!sameLevelCandidates.length && state.championship === "YamahaR3Cup") {
+    // AJUSTE (nuevo): R3 Cup apunta a la escalera de Superbikes (SportBike),
+    // no a la de motos — así que ahora la alternativa es mayoritariamente
+    // SportBike o Stock600, con muy poco peso para JuniorGP (antes era la
+    // única opción, prácticamente garantizada).
+    const alt = [
+      ...TEAMS.SportBike.map((t) => ({ team: t, championship: "SportBike" })),
+      ...TEAMS.Stock600.map((t) => ({ team: t, championship: "Stock600" })),
+      ...[...TEAMS.MotoJunior].sort(() => Math.random() - 0.5).slice(0, 2)
+        .map((t) => ({ team: t, championship: "MotoJunior" })),
+    ];
+    sameLevelCandidates.push(...alt.sort(() => Math.random() - 0.5));
   }
 
   const picks = [];
