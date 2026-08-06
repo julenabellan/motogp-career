@@ -566,11 +566,18 @@ function renderMarket() {
 
   const offers = generateMarketOffers();
   const renewed = offers.some((o) => o.isCurrent);
+  // AJUSTE (solo visual): si la falta de renovación es porque has ganado el
+  // campeonato y toca dar el salto (forcedExit), no se muestra el aviso
+  // rojo de "no te ha renovado" — no es un rechazo, es un ascenso. El aviso
+  // rojo se reserva para cuando de verdad no te han renovado.
+  const isForcedExit = !!offers.forcedExit;
 
   $("#market-hint").textContent = renewed
     ? "Elige equipo para disputar la temporada"
-    : `${state.team.name} no ha renovado tu contrato — elige tu nuevo equipo para la temporada`;
-  $("#market-hint").classList.toggle("market-hint-warning", !renewed);
+    : isForcedExit
+      ? "Elige tu nuevo equipo para la temporada"
+      : `${state.team.name} no ha renovado tu contrato — elige tu nuevo equipo para la temporada`;
+  $("#market-hint").classList.toggle("market-hint-warning", !renewed && !isForcedExit);
 
   offers.forEach((o, i) => {
     const card = document.createElement("div");
@@ -1358,7 +1365,14 @@ function generateMarketOffers() {
   // siempre a la derecha), lo cual quedaba raro y predecible.
   const renewalOffer = offers.find((o) => o.isCurrent);
   const restOffers = offers.filter((o) => !o.isCurrent).sort(() => Math.random() - 0.5);
-  return renewalOffer ? [renewalOffer, ...restOffers] : restOffers;
+  const finalOffers = renewalOffer ? [renewalOffer, ...restOffers] : restOffers;
+  // AJUSTE (solo visual, sin tocar porcentajes ni lógica de mercado): se
+  // expone si la falta de renovación es un rechazo real (nonRenewal) o
+  // simplemente que ganar el campeonato obliga a salir (forcedExit) — así
+  // renderMarket puede distinguir ambos casos y no mostrar el aviso rojo de
+  // "no te ha renovado" cuando en realidad es un ascenso.
+  finalOffers.forcedExit = forcedExit;
+  return finalOffers;
 }
 
 function findTeamData(name, championship) {
