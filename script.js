@@ -898,19 +898,27 @@ function generateMarketOffers() {
   // vía del Europeo de Moto2, o simplemente quedarse en Moto2 (lo más
   // habitual, relleno luego con sameLevelCandidates). Las proporciones
   // varían de tirada en tirada, así que ninguna partida se siente igual.
+  // AJUSTE (nuevo): más ofertas de Supersport, y un poco más las
+  // nacionales — sobre todo si además estás fuera del top 7 (donde ya no
+  // puede llegar ninguna oferta de MotoGP esa temporada).
   let moto2StuckPick = null;
   if (state.championship === "Moto2" && !targetChamp && lastSeason && lastSeason.pos > 5) {
     const stuckGate = tenure >= (Math.random() < 0.5 ? 2 : 3);
     if (stuckGate) {
+      const outsideTop7 = lastSeason.pos > 7;
+      const nationalChance = outsideTop7 ? 0.22 : 0.18;
+      const sspWidth = outsideTop7 ? 0.26 : 0.20;
+      const euroWidth = 0.23;
       const r = Math.random();
-      if (r < 0.18) {
+      if (r < nationalChance) {
         moto2StuckPick = pickGuaranteedNationalOffer(55, 70);
-      } else if (r < 0.36) {
+      } else if (r < nationalChance + sspWidth) {
         moto2StuckPick = { team: pickTeamByStrength("Supersport", 67, 74), championship: "Supersport" };
-      } else if (r < 0.59) { // AJUSTE: 0.56 → 0.59 (ancho 20% → 23%)
+      } else if (r < nationalChance + sspWidth + euroWidth) {
         moto2StuckPick = { team: pickTeamByStrength("Moto2Euro", 55, 62), championship: "Moto2Euro" };
       }
-      // El resto (41%): se queda en Moto2, sin vía especial esta temporada.
+      // El resto: se queda en Moto2, sin vía especial esta temporada (39%
+      // dentro del top 7, 29% fuera de él).
     }
   }
 
