@@ -746,8 +746,15 @@ function generateMarketOffers() {
   const nonRenewal = !!state.pendingNonRenewal;
 
   // Oferta de renovación: disponible siempre, salvo que el equipo decida
-  // no renovar (ver nonRenewal más arriba).
-  if (!nonRenewal) {
+  // no renovar (ver nonRenewal más arriba), o que ganar (o quedar 2º) en
+  // el Europeo de Moto2 o en Stock600 haga que la salida sea obligatoria
+  // esta temporada — en ese caso ni siquiera se ofrece la renovación,
+  // para que "quedarte" no sea una opción en absoluto (antes la tarjeta de
+  // renovación aparecía igualmente, sin depender de las vías de salida de
+  // arriba).
+  const forcedExit = lastSeason && lastSeason.pos <= 2 &&
+    (state.championship === "Moto2Euro" || state.championship === "Stock600");
+  if (!nonRenewal && !forcedExit) {
     offers.push({ team: currentTeamData, championship: state.championship, isCurrent: true });
   }
 
@@ -1321,12 +1328,13 @@ function generateMarketOffers() {
 
   // Con el retiro ya disponible, solo se añade 1 oferta extra (2 en total
   // junto con la renovación) para que el retiro sea la tercera opción,
-  // no una tarjeta añadida aparte. Si no ha habido renovación, hace falta
-  // una oferta extra más (no hay "renovación" que cuente como una de las
-  // tres tarjetas).
+  // no una tarjeta añadida aparte. Si no ha habido renovación (o la salida
+  // es obligatoria, ver forcedExit), hace falta una oferta extra más (no
+  // hay "renovación" que cuente como una de las tres tarjetas).
+  const noRenewalCard = nonRenewal || forcedExit;
   const extraPicksNeeded = state.age >= RETIRE_MIN_AGE
-    ? (nonRenewal ? 2 : 1)
-    : (nonRenewal ? 3 : 2);
+    ? (noRenewalCard ? 2 : 1)
+    : (noRenewalCard ? 3 : 2);
 
   // RECORTE: si varias vías especiales coinciden la misma temporada (esto
   // pasaba sobre todo con las nacionales, que por sí solas podían aportar
