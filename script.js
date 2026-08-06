@@ -812,7 +812,12 @@ function generateMarketOffers() {
     // bien que vaya la temporada — ni siquiera con un ascenso meteórico.
     } else if (state.championship === "Moto3") {
       if (state.age >= 18) targetChamp = "Moto2";
-    } else if (state.championship === "Moto2") targetChamp = "MotoGP";
+    } else if (state.championship === "Moto2") {
+      // AJUSTE (nuevo): fuera del top 7 del campeonato, ninguna oferta de
+      // MotoGP puede llegar esta temporada, aunque el resto de requisitos
+      // (temporada "buena", tiempo cumplido, etc.) se cumplan.
+      if (lastSeason && lastSeason.pos <= 7) targetChamp = "MotoGP";
+    }
     else if (state.championship === "Supersport") targetChamp = "WorldSBK";
     else if (state.championship === "SportBike") targetChamp = "Supersport";
   }
