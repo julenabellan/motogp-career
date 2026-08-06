@@ -178,6 +178,7 @@ const TEAMS = {
     { name: "McAMS Yamaha",   strength: 66, color: "#21409a", logo: "McAms"   },
     { name: "Nitrous Competitions Racing Ducati",    strength: 64, color: "#ee332e", logo: "Nitrous"    },
     { name: "Hager PBM Racing Team", strength: 62, color: "#ff2f00", logo: "PBM" },
+    { name: "Moto Rapido Racing", strength: 61, color: "#a0a0a2", logo: "MotoRapido" },
   ],
   CIV: [
     { name: "Broncos Racing Team",   strength: 64, color: "#ff2f00", logo: "Broncos"   },
