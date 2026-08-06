@@ -17,7 +17,16 @@ const COUNTRIES = [
   ["Argentina","AR"],["Brasil","BR"],["Chile","CL"],["Colombia","CO"],
   ["Perú","PE"],["Uruguay","UY"],["Paraguay","PY"],["Venezuela","VE"],
   ["Ecuador","EC"],["Sudáfrica","ZA"],["Marruecos","MA"],["Egipto","EG"],
-  ["Arabia Saudí","SA"],["Qatar","QA"],["Emiratos Árabes Unidos","AE"]
+  ["Arabia Saudí","SA"],["Qatar","QA"],["Emiratos Árabes Unidos","AE"],
+  // AJUSTE (nuevo): +30 países.
+  ["Andorra","AD"],["Luxemburgo","LU"],["Islandia","IS"],["Estonia","EE"],
+  ["Letonia","LV"],["Lituania","LT"],["Chipre","CY"],["Malta","MT"],
+  ["Albania","AL"],["Macedonia del Norte","MK"],["Moldavia","MD"],["Bielorrusia","BY"],
+  ["Rusia","RU"],["Georgia","GE"],["Armenia","AM"],["Azerbaiyán","AZ"],
+  ["Kazajistán","KZ"],["Israel","IL"],["Jordania","JO"],["Líbano","LB"],
+  ["Kuwait","KW"],["Baréin","BH"],["Omán","OM"],["Nigeria","NG"],
+  ["Kenia","KE"],["Argelia","DZ"],["Túnez","TN"],["Singapur","SG"],
+  ["Taiwán","TW"],["Panamá","PA"]
 ].map(([name, code]) => ({ name, code }));
 
 function flagImg(code, className = "flag-img") {
