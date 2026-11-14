@@ -930,7 +930,13 @@ function generateMarketOffers() {
     const sorted = [...(TEAMS[champ] || [])].sort((a, b) => b.strength - a.strength);
     const n = sorted.length;
     const pos = lastSeason ? lastSeason.pos : 8;
-    const [f, t] = pos === 1 ? [0, 0.45] : pos <= 3 ? [0.1, 0.7] : pos <= 5 ? [0.4, 1] : [0.6, 1];
+    let [f, t] = pos === 1 ? [0, 0.45] : pos <= 3 ? [0.1, 0.7] : pos <= 5 ? [0.4, 1] : [0.6, 1];
+    // Red Bull Rookies Cup: los mejores resultados dan acceso a equipos de
+    // Moto3 un pelín mejores que desde otras categorías.
+    if (state.championship === "RedBullRookies") {
+      if (pos === 1) [f, t] = [0, 0.35];
+      else if (pos <= 3) [f, t] = [0.05, 0.6];
+    }
     const win = sorted.slice(Math.floor(f * n), Math.max(Math.ceil(t * n), Math.floor(f * n) + 1));
     return win.sort(() => Math.random() - 0.5);
   };
@@ -1066,8 +1072,8 @@ function generateMarketOffers() {
     const stuckGate = tenure >= (Math.random() < 0.5 ? 2 : 3);
     if (stuckGate) {
       const outsideTop7 = lastSeason.pos > 7;
-      const nationalChance = outsideTop7 ? 0.22 : 0.18;
-      const sspWidth = outsideTop7 ? 0.26 : 0.20;
+      const nationalChance = outsideTop7 ? 0.19 : 0.16;
+      const sspWidth = outsideTop7 ? 0.23 : 0.18;
       const euroWidth = 0.23;
       const r = Math.random();
       if (r < nationalChance) {
@@ -1429,7 +1435,7 @@ function generateMarketOffers() {
     }
   };
   if (state.championship === "Moto2") {
-    addBase(0.07, "Supersport", 66, 74);
+    addBase(0.06, "Supersport", 66, 74);
     addBase(0.03, "WorldSBK", 69, 76);
   } else if (state.championship === "Moto3") {
     addBase(0.04, "SportBike", 46, 54);
@@ -1525,10 +1531,10 @@ function generateMarketOffers() {
     const add = (w, champ, lo, hi) => opts.push({ w, champ, lo, hi });
     if (ch === "MotoJunior" || ch === "RedBullRookies") { add(3, "Stock600", 46, 54); add(3, "SportBike", 46, 54); add(0.7, "Moto2Euro", 50, 56); }
     else if (ch === "Moto3") { add(2, "Moto2Euro", 55, 61); add(2.8, "SportBike", 46, 54); add(2.3, "Supersport", 66, 72); add(0.5, "Stock600", 48, 54); }
-    else if (ch === "Moto2") { add(3, "Supersport", 67, 74); add(2.5, "Moto2Euro", 55, 62); add(2, "NAT", 55, 70); add(0.6, "WorldSBK", 69, 76); }
+    else if (ch === "Moto2") { add(2.6, "Supersport", 67, 74); add(2.5, "Moto2Euro", 55, 62); add(1.7, "NAT", 55, 70); add(0.6, "WorldSBK", 69, 76); }
     else if (ch === "Moto2Euro") { add(4, "NAT", 50, 65); add(1.2, "Supersport", 65, 71); add(1, "SportBike", 50, 58); add(0.4, "Stock600", 50, 56); }
     else if (ch === "Supersport") { add(2, "NAT", 55, 70); add(1.5, "SportBike", 46, 54); add(1, "Moto2Euro", 56, 62); }
-    else if (ch === "SportBike") { add(3, "Stock600", 46, 54); add(2, "NAT", 52, 66); add(1.5, "Moto2Euro", 55, 60); }
+    else if (ch === "SportBike") { add(3, "Stock600", 46, 54); add(state.age <= 21 ? 0.15 : 2, "NAT", 52, 66); add(1.5, "Moto2Euro", 55, 60); }
     else if (ch === "MotoGP") { add(4, "WorldSBK", 69, 77); add(0.8, "NAT", 58, 72); }
     else if (ch === "WorldSBK") { add(4, "NAT", 55, 70); add(1.5, "Supersport", 67, 74); }
     else if (NATIONAL_CHAMPS.includes(ch)) { add(3, "NAT", 52, 68); add(1.5, "Supersport", 66, 72); add(1, "Moto2Euro", 55, 62); add(1, "SportBike", 50, 58); }
@@ -1617,6 +1623,19 @@ function generateMarketOffers() {
   }
 
   {
+    // LÓGICA por edad/situación (se quita la oferta y se repone con otra):
+    //  - SportBike con 21 años o menos: irse a un nacional es MUY poco
+    //    probable (10%); siendo joven lo normal es seguir o ir a Stock/Europeo.
+    //  - Recién llegado a MotoGP (2 temporadas o menos) y aún joven (27 o
+    //    menos): WorldSBK solo aparece tras una mala temporada (fuera del
+    //    top 12) o si no te renuevan; la edad ya no cuenta como "joven".
+    for (let i = picks.length - 1; i >= 0; i--) {
+      const p = picks[i];
+      if (state.championship === "SportBike" && state.age <= 21 &&
+          NATIONAL_CHAMPS.includes(p.championship) && Math.random() < 0.9) picks.splice(i, 1);
+      else if (state.championship === "MotoGP" && state.age <= 27 && tenure <= 2 &&
+          p.championship === "WorldSBK" && !(lastSeason && lastSeason.pos >= 13) && !nonRenewal) picks.splice(i, 1);
+    }
     // Seguridad: sin equipos repetidos ni el tuyo; si algo se quita, se repone.
     const seen = new Set([state.team.name]);
     for (let i = picks.length - 1; i >= 0; i--) {
@@ -1779,7 +1798,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // Un buen resultado pesa menos en campeonatos de menor nivel: ganar el
   // Europeo de Moto2 no puede subir la media como ganar en un Mundial.
   const lowTier = { Moto2Euro: 0.7, Stock600: 0.85 }[state.championship];
-  const tierMult = NATIONAL_CHAMPS.includes(state.championship) ? 0.73 : lowTier;
+  const tierMult = NATIONAL_CHAMPS.includes(state.championship) ? 0.85 : lowTier;
   if (tierMult && perfFactor > 0) perfFactor *= tierMult; // solo recorta lo positivo
 
   // 4. Azar — más amplio en pilotos irregulares (baja "consistency").
