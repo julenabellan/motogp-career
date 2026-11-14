@@ -1149,6 +1149,8 @@ function generateMarketOffers() {
     // (8% a los 18, solo un 4% a partir de los 19).
   }
 
+  if (juniorStuck18Pick && Math.random() > ({ 16: 0.10, 17: 0.40, 18: 0.85 }[state.age] ?? 1)) juniorStuck18Pick = null;
+
   // Piloto de Supersport que queda 5º o peor, a partir de su 2ª temporada
   // en la categoría, independientemente de la edad: también puede
   // llegarle alguna oferta del Europeo de Moto2 como vía alternativa.
@@ -1444,6 +1446,10 @@ function generateMarketOffers() {
   if (moto3ToEuroPick) picks.push(moto3ToEuroPick);
   if (moto3TwoSeasonsEuroPick) picks.push(moto3TwoSeasonsEuroPick);
   if (juniorToEuroPick) picks.push(juniorToEuroPick);
+  if (state.championship === "MotoJunior" && lastSeason && lastSeason.pos >= 4 && lastSeason.pos <= 5 &&
+      tenure === 1 && state.age < 17 && Math.random() < 0.5) {
+    picks.push({ team: TEAMS.RedBullRookies[0], championship: "RedBullRookies" });
+  }
   if (juniorStuck18Pick) picks.push(juniorStuck18Pick);
   if (sspToEuroPick) picks.push(sspToEuroPick);
   if (spbToMoto2EuroPick) picks.push(spbToMoto2EuroPick);
@@ -1472,7 +1478,9 @@ function generateMarketOffers() {
   //  - "Clima" del mercado (cold/normal/hot) cambia cuánto se mueve el año.
   const picks = [];
   if (repeatedNonRenewalPick) picks.push(repeatedNonRenewalPick);
-  const sameOffer = (a, b) => a.team.name === b.team.name && a.championship === b.championship;
+  // Un mismo equipo (por NOMBRE) nunca puede salir dos veces, ni coincidir con el
+  // tuyo, aunque exista en varios campeonatos (AGR, Aspar, Promoracing...).
+  const sameOffer = (a, b) => a.team.name === b.team.name;
   const destTaken = (c) => !c.promo && !forcedExit && c.championship !== state.championship &&
     picks.some((p) => p.championship === c.championship);
   const champion = !!lastSeason && lastSeason.pos === 1;
@@ -1489,6 +1497,13 @@ function generateMarketOffers() {
   // un año más; y una temporada floja abre más salidas a otros campeonatos.
   if (state.age <= 21) stayProb += 0.20;
   if (!promoGood) lateralP += 0.15;
+  // Júnior: una mala temporada a los 16-17 casi nunca significa irse (se
+  // sigue un año más); a los 18-19 ya es lo habitual.
+  const juniorExitAge = { 16: 0.10, 17: 0.40, 18: 0.85 }[state.age] ?? (state.age < 16 ? 0.05 : 1);
+  if (state.championship === "MotoJunior" || state.championship === "RedBullRookies") {
+    lateralP *= juniorExitAge;
+    stayProb += (1 - juniorExitAge) * 0.35;
+  }
   if (state.championship === "Moto3" && !promoGood) stayProb += 0.10; // o seguir en Moto3
   // Salidas laterales con sentido según dónde estés (en vez de "subir").
   const lateralOffer = () => {
@@ -1497,6 +1512,7 @@ function generateMarketOffers() {
     if (ch === "MotoJunior" || ch === "RedBullRookies") { add(3, "Stock600", 46, 54); add(3, "SportBike", 46, 54); add(0.7, "Moto2Euro", 50, 56); }
     else if (ch === "Moto3") { add(2, "Moto2Euro", 55, 61); add(2.8, "SportBike", 46, 54); add(2.3, "Supersport", 66, 72); add(0.5, "Stock600", 48, 54); }
     else if (ch === "Moto2") { add(3, "Supersport", 67, 74); add(2.5, "Moto2Euro", 55, 62); add(2, "NAT", 55, 70); add(0.6, "WorldSBK", 69, 76); }
+    else if (ch === "Moto2Euro") { add(4, "NAT", 50, 65); add(1.2, "Supersport", 65, 71); add(1, "SportBike", 50, 58); add(0.4, "Stock600", 50, 56); }
     else if (ch === "Supersport") { add(2, "NAT", 55, 70); add(1.5, "SportBike", 46, 54); add(1, "Moto2Euro", 56, 62); }
     else if (ch === "SportBike") { add(3, "Stock600", 46, 54); add(2, "NAT", 52, 66); add(1.5, "Moto2Euro", 55, 60); }
     else if (ch === "Stock600") { add(2, "SportBike", 50, 58); add(1.5, "NAT", 50, 64); add(1, "Moto2Euro", 52, 58); }
@@ -1509,7 +1525,7 @@ function generateMarketOffers() {
   const nPromo = () => picks.filter((p) => p.promo).length;
   for (let slot = 0; slot < extraPicksNeeded && picks.length < extraPicksNeeded; slot++) {
     const cands = buildSpecialPicks()
-      .filter((c) => !picks.some((p) => sameOffer(p, c)) && !destTaken(c))
+      .filter((c) => c.team.name !== state.team.name && !picks.some((p) => sameOffer(p, c)) && !destTaken(c))
       .filter((c) => c.promo || Math.random() < keepProb);
     const promoPool = nPromo() < maxPromo ? cands.filter((c) => c.promo) : [];
     if (promoPool.length && (nPromo() === 0 || multiPromo)) {
@@ -1520,7 +1536,8 @@ function generateMarketOffers() {
     // Salida lateral lógica de la categoría (según el perfil de la temporada)
     if (!forcedExit && !(multiPromo && hasPromoRoute) && Math.random() < lateralP) {
       const lat = lateralOffer();
-      if (lat && lat.championship !== state.championship && !picks.some((p) => p.championship === lat.championship)) {
+      if (lat && lat.team.name !== state.team.name && lat.championship !== state.championship &&
+          !picks.some((p) => p.championship === lat.championship || sameOffer(p, lat))) {
         picks.push(lat);
         continue;
       }
@@ -1541,20 +1558,34 @@ function generateMarketOffers() {
     let attempts = 0;
     while (picks.length < extraPicksNeeded && attempts++ < 40) {
       const extra = roll();
-      if (!picks.some((p) => sameOffer(p, extra))) picks.push(extra);
+      if (extra.team.name !== state.team.name && !picks.some((p) => sameOffer(p, extra))) picks.push(extra);
     }
   }
   if (multiPromo && picks.some((p) => p.promo)) {
     // Campeón con ascenso disponible: las tarjetas que falten son más
     // equipos de la categoría superior, nunca de la que acabas de ganar.
     const up = picks.find((p) => p.promo).championship;
-    const more = promoWindowFor(up).filter((t) => !picks.some((p) => p.team.name === t.name && p.championship === up));
+    const more = promoWindowFor(up).filter((t) => t.name !== state.team.name && !picks.some((p) => p.team.name === t.name));
     while (picks.length < extraPicksNeeded && more.length) {
       picks.push({ team: more.shift(), championship: up, promo: true });
     }
   }
   while (!forcedExit && picks.length < extraPicksNeeded && sameLevelCandidates.length) {
     picks.push(sameLevelCandidates.shift());
+  }
+
+  {
+    // Seguridad: sin equipos repetidos ni el tuyo; si algo se quita, se repone.
+    const seen = new Set([state.team.name]);
+    for (let i = picks.length - 1; i >= 0; i--) {
+      if (seen.has(picks[i].team.name)) picks.splice(i, 1);
+      else seen.add(picks[i].team.name);
+    }
+    const spare = sameLevelCandidates.filter((c) => !seen.has(c.team.name));
+    while (picks.length < extraPicksNeeded && spare.length) {
+      const c = spare.shift();
+      picks.push(c); seen.add(c.team.name);
+    }
   }
 
   picks.forEach((c) => {
@@ -1706,7 +1737,8 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // Un buen resultado pesa menos en campeonatos de menor nivel: ganar el
   // Europeo de Moto2 no puede subir la media como ganar en un Mundial.
   const lowTier = { Moto2Euro: 0.7, Stock600: 0.85 }[state.championship];
-  if (lowTier && perfFactor > 0) perfFactor *= lowTier;
+  const tierMult = NATIONAL_CHAMPS.includes(state.championship) ? 0.7 : lowTier;
+  if (tierMult && perfFactor > 0) perfFactor *= tierMult; // solo recorta lo positivo
 
   // 4. Azar — más amplio en pilotos irregulares (baja "consistency").
   const luckSpread = lerp(0.5, 2.4, 1 - p.consistency);
