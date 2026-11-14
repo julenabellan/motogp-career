@@ -842,6 +842,68 @@ function generateMarketOffers() {
      state.championship === "Moto3" || state.championship === "Moto2" ||
      state.championship === "Supersport" || state.championship === "SportBike");
 
+  // Tiradas de salida del CAMPEÓN (Europeo de Moto2 y Stock 600). Son
+  // funciones para poder repetirlas: al ser la salida obligatoria no hay
+  // renovación, y las 2-3 tarjetas del mercado deben salir TODAS de estos
+  // porcentajes (antes las que sobraban se rellenaban con equipos de la
+  // misma categoría que acababas de ganar).
+  const rollMoto2EuroChampion = () => {
+    const r = Math.random();
+    if (r < 0.84) return { team: pickTeamByStrength("Moto2", 68, 75), championship: "Moto2" };
+    if (r < 0.90) return { team: pickTeamByStrength("Supersport", 69, 75), championship: "Supersport" };
+    if (r < 0.94) return { team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" };
+    return pickGuaranteedNationalOffer(55, 68);
+  };
+  const rollStock600Champion = () => {
+    const r = Math.random();
+    if (r < 0.86) return { team: pickTeamByStrength("Moto2Euro", 58, 64), championship: "Moto2Euro" };
+    if (r < 0.92) return pickGuaranteedNationalOffer(50, 64);
+    if (r < 0.97) return { team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" };
+    return { team: pickTeamByStrength("Supersport", 66, 72), championship: "Supersport" };
+  };
+
+  const sameLevelCandidates = TEAMS[state.championship]
+    .filter((t) => t.name !== state.team.name)
+    .map((t) => ({ team: t, championship: state.championship }))
+    .sort(() => Math.random() - 0.5);
+
+  // Red Bull Rookies Cup y Yamaha R3 Cup son monomarca: no existe otro
+  // equipo dentro de la misma categoría al que cambiarse. Si ese año no
+  // hay ascenso ni ninguna otra vía especial, se ofrece como alternativa
+  // equipos de otra categoría en vez de dejar el mercado con menos
+  // tarjetas de las esperadas.
+  if (!sameLevelCandidates.length && state.championship === "RedBullRookies") {
+    // Red Bull Rookies apunta a Moto3: la alternativa natural es FIM
+    // JuniorGP (misma escalera de motos).
+    sameLevelCandidates.push(
+      ...TEAMS.MotoJunior.map((t) => ({ team: t, championship: "MotoJunior" }))
+        .sort(() => Math.random() - 0.5)
+    );
+  } else if (!sameLevelCandidates.length && state.championship === "YamahaR3Cup") {
+    // AJUSTE (nuevo): R3 Cup apunta a la escalera de Superbikes (SportBike),
+    // no a la de motos — así que ahora la alternativa es mayoritariamente
+    // SportBike o Stock600, con muy poco peso para JuniorGP (antes era la
+    // única opción, prácticamente garantizada).
+    const alt = [
+      ...TEAMS.SportBike.map((t) => ({ team: t, championship: "SportBike" })),
+      ...TEAMS.Stock600.map((t) => ({ team: t, championship: "Stock600" })),
+      ...[...TEAMS.MotoJunior].sort(() => Math.random() - 0.5).slice(0, 2)
+        .map((t) => ({ team: t, championship: "MotoJunior" })),
+    ];
+    sameLevelCandidates.push(...alt.sort(() => Math.random() - 0.5));
+  }
+
+  // Con el retiro ya disponible, solo se añade 1 oferta extra (2 en total
+  // junto con la renovación) para que el retiro sea la tercera opción,
+  // no una tarjeta añadida aparte. Si no ha habido renovación (o la salida
+  // es obligatoria, ver forcedExit), hace falta una oferta extra más (no
+  // hay "renovación" que cuente como una de las tres tarjetas).
+  const noRenewalCard = nonRenewal || forcedExit;
+  const extraPicksNeeded = state.age >= RETIRE_MIN_AGE
+    ? (noRenewalCard ? 2 : 1)
+    : (noRenewalCard ? 3 : 2);
+
+  const buildSpecialPicks = () => {
   let targetChamp = null;
   if (lastGood && (tenureOk || (exceptional && Math.random() < 0.25) || guaranteedPromotion)) {
     // Fase de formación: FIM JuniorGP y Red Bull Rookies Cup desembocan en
@@ -1134,26 +1196,6 @@ function generateMarketOffers() {
   //    posibilidad de que sea Supersport en su lugar — o, la mayoría de
   //    las veces que no se activa ninguna de las dos, simplemente sigue
   //    en Stock600.
-  // Tiradas de salida del CAMPEÓN (Europeo de Moto2 y Stock 600). Son
-  // funciones para poder repetirlas: al ser la salida obligatoria no hay
-  // renovación, y las 2-3 tarjetas del mercado deben salir TODAS de estos
-  // porcentajes (antes las que sobraban se rellenaban con equipos de la
-  // misma categoría que acababas de ganar).
-  const rollMoto2EuroChampion = () => {
-    const r = Math.random();
-    if (r < 0.84) return { team: pickTeamByStrength("Moto2", 68, 75), championship: "Moto2" };
-    if (r < 0.90) return { team: pickTeamByStrength("Supersport", 69, 75), championship: "Supersport" };
-    if (r < 0.94) return { team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" };
-    return pickGuaranteedNationalOffer(55, 68);
-  };
-  const rollStock600Champion = () => {
-    const r = Math.random();
-    if (r < 0.86) return { team: pickTeamByStrength("Moto2Euro", 58, 64), championship: "Moto2Euro" };
-    if (r < 0.92) return pickGuaranteedNationalOffer(50, 64);
-    if (r < 0.97) return { team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" };
-    return { team: pickTeamByStrength("Supersport", 66, 72), championship: "Supersport" };
-  };
-
   let stock600ExitPick = null;
   if (state.championship === "Stock600" && lastSeason) {
     const pos = lastSeason.pos;
@@ -1328,42 +1370,7 @@ function generateMarketOffers() {
     nationalLateralPick = { team: pickTeamByStrength(champ, cs - 8, cs + 8), championship: champ };
   }
 
-  const sameLevelCandidates = TEAMS[state.championship]
-    .filter((t) => t.name !== state.team.name)
-    .map((t) => ({ team: t, championship: state.championship }))
-    .sort(() => Math.random() - 0.5);
-
-  // Red Bull Rookies Cup y Yamaha R3 Cup son monomarca: no existe otro
-  // equipo dentro de la misma categoría al que cambiarse. Si ese año no
-  // hay ascenso ni ninguna otra vía especial, se ofrece como alternativa
-  // equipos de otra categoría en vez de dejar el mercado con menos
-  // tarjetas de las esperadas.
-  if (!sameLevelCandidates.length && state.championship === "RedBullRookies") {
-    // Red Bull Rookies apunta a Moto3: la alternativa natural es FIM
-    // JuniorGP (misma escalera de motos).
-    sameLevelCandidates.push(
-      ...TEAMS.MotoJunior.map((t) => ({ team: t, championship: "MotoJunior" }))
-        .sort(() => Math.random() - 0.5)
-    );
-  } else if (!sameLevelCandidates.length && state.championship === "YamahaR3Cup") {
-    // AJUSTE (nuevo): R3 Cup apunta a la escalera de Superbikes (SportBike),
-    // no a la de motos — así que ahora la alternativa es mayoritariamente
-    // SportBike o Stock600, con muy poco peso para JuniorGP (antes era la
-    // única opción, prácticamente garantizada).
-    const alt = [
-      ...TEAMS.SportBike.map((t) => ({ team: t, championship: "SportBike" })),
-      ...TEAMS.Stock600.map((t) => ({ team: t, championship: "Stock600" })),
-      ...[...TEAMS.MotoJunior].sort(() => Math.random() - 0.5).slice(0, 2)
-        .map((t) => ({ team: t, championship: "MotoJunior" })),
-    ];
-    sameLevelCandidates.push(...alt.sort(() => Math.random() - 0.5));
-  }
-
   const picks = [];
-  // El paso atrás garantizado (repeatedNonRenewalPick) va primero: así
-  // sobrevive siempre al recorte de abajo, aunque coincida con otras
-  // vías especiales la misma temporada.
-  if (repeatedNonRenewalPick) picks.push(repeatedNonRenewalPick);
   if (targetChamp) {
     const promoCandidates = TEAMS[targetChamp]
       .map((t) => ({ team: t, championship: targetChamp }))
@@ -1395,33 +1402,32 @@ function generateMarketOffers() {
   if (stagnationPick) picks.push(stagnationPick);
   nationalPicks.forEach((p) => picks.push(p));
 
-  // Con el retiro ya disponible, solo se añade 1 oferta extra (2 en total
-  // junto con la renovación) para que el retiro sea la tercera opción,
-  // no una tarjeta añadida aparte. Si no ha habido renovación (o la salida
-  // es obligatoria, ver forcedExit), hace falta una oferta extra más (no
-  // hay "renovación" que cuente como una de las tres tarjetas).
-  const noRenewalCard = nonRenewal || forcedExit;
-  const extraPicksNeeded = state.age >= RETIRE_MIN_AGE
-    ? (noRenewalCard ? 2 : 1)
-    : (noRenewalCard ? 3 : 2);
+  return picks;
+  };
 
-  // RECORTE: si varias vías especiales coinciden la misma temporada (esto
-  // pasaba sobre todo con las nacionales, que por sí solas podían aportar
-  // hasta 2 ofertas), nunca deben verse más de "extraPicksNeeded" tarjetas
-  // además de la renovación y el retiro. Antes esto solo rellenaba huecos
-  // y nunca recortaba lo que sobraba, así que podían colarse 3 ofertas +
-  // retiro en vez de 2 + retiro. Se recortan las últimas (las de menor
-  // prioridad, ya que las más importantes se han empujado primero).
+  // CADA oferta extra sale de una tirada independiente con los porcentajes
+  // de la situación (subida, vías laterales, bajada...). Si en una tirada no
+  // sale ninguna vía especial, esa tarjeta es la de "mantener" (otro equipo
+  // de la misma categoría). Antes solo la primera tarjeta seguía los
+  // porcentajes y el resto se rellenaba al azar.
+  const picks = [];
+  // El paso atrás garantizado (repeatedNonRenewalPick) va primero.
+  if (repeatedNonRenewalPick) picks.push(repeatedNonRenewalPick);
+  const sameOffer = (a, b) => a.team.name === b.team.name && a.championship === b.championship;
+  for (let slot = 0; slot < extraPicksNeeded && picks.length < extraPicksNeeded; slot++) {
+    const pick = buildSpecialPicks().find((c) => !picks.some((p) => sameOffer(p, c)));
+    if (pick) picks.push(pick);
+  }
   if (picks.length > extraPicksNeeded) picks.length = extraPicksNeeded;
-  // Salida obligatoria (campeón de Moto2 Europeo / Stock 600): las tarjetas
-  // que faltan se rellenan repitiendo la tirada del campeón (sin repetir
-  // el mismo equipo), nunca con equipos de la categoría que acabas de ganar.
+  // Salida obligatoria (campeón de Moto2 Europeo / Stock 600): si aún faltan
+  // tarjetas, se repite la tirada del campeón; nunca equipos de la categoría
+  // que acabas de ganar.
   if (forcedExit) {
     const roll = state.championship === "Moto2Euro" ? rollMoto2EuroChampion : rollStock600Champion;
     let attempts = 0;
     while (picks.length < extraPicksNeeded && attempts++ < 40) {
       const extra = roll();
-      if (!picks.some((p) => p.team.name === extra.team.name && p.championship === extra.championship)) picks.push(extra);
+      if (!picks.some((p) => sameOffer(p, extra))) picks.push(extra);
     }
   }
   while (!forcedExit && picks.length < extraPicksNeeded && sameLevelCandidates.length) {
