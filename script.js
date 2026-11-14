@@ -856,8 +856,8 @@ function generateMarketOffers() {
   // misma categoría que acababas de ganar).
   const rollMoto2EuroChampion = () => {
     const r = Math.random();
-    if (r < 0.84) return { team: pickTeamByStrength("Moto2", 68, 75), championship: "Moto2" };
-    if (r < 0.90) return { team: pickTeamByStrength("Supersport", 69, 75), championship: "Supersport" };
+    if (r < 0.83) return { team: pickTeamByStrength("Moto2", 68, 75), championship: "Moto2" };
+    if (r < 0.93) return { team: pickTeamByStrength("Supersport", 69, 75), championship: "Supersport" };
     if (r < 0.94) return { team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" };
     return pickGuaranteedNationalOffer(55, 68);
   };
@@ -956,7 +956,15 @@ function generateMarketOffers() {
       const gpAgeOk = state.age <= 25 || (state.age <= 27 && m2pos <= 2) || (state.age <= 29 && m2pos === 1);
       if (gpAgeOk && (m2pos <= 3 || (m2pos <= 5 && tenure >= 2 && state.age <= 24))) targetChamp = "MotoGP";
     }
-    else if (state.championship === "Supersport") targetChamp = "WorldSBK";
+    else if (state.championship === "Supersport") {
+      // LÓGICA: siendo joven (<=22) subir con un 3º/2º es normal (4º-5º, muy
+      // poco probable); siendo más mayor, o ganas o lo tienes difícil.
+      const sp = lastSeason ? lastSeason.pos : 99;
+      const r = Math.random();
+      const young = state.age <= 22;
+      if (young ? (sp <= 3 || (sp <= 5 && r < 0.08))
+                : (sp === 1 || (sp === 2 && r < 0.25) || (sp === 3 && r < 0.10))) targetChamp = "WorldSBK";
+    }
     else if (state.championship === "SportBike") targetChamp = "Supersport";
   }
 
@@ -971,10 +979,11 @@ function generateMarketOffers() {
   // probabilidad de recibir esa oferta de MotoGP sube mucho (aunque
   // tampoco al 100%).
   if (!targetChamp && state.championship === "WorldSBK" && state.age < 24 &&
-      lastSeason && lastSeason.pos === 1 && Math.random() < 0.92) {
+      lastSeason && lastSeason.pos === 1 && Math.random() < 0.70) {
     targetChamp = "MotoGP";
-  } else if (!targetChamp && state.championship === "WorldSBK" && state.age <= 28 &&
-      lastSeason && (lastSeason.cg >= 1 || lastSeason.pos <= 2) && Math.random() < 0.75) {
+  } else if (!targetChamp && state.championship === "WorldSBK" && state.age <= 28 && lastSeason &&
+      ((lastSeason.pos === 1 && Math.random() < 0.50) ||
+       (lastSeason.pos === 2 && lastSeason.cg >= 3 && Math.random() < 0.22))) {
     targetChamp = "MotoGP";
   }
 
@@ -1065,7 +1074,7 @@ function generateMarketOffers() {
   // seguir estancado en el Mundial de motos. Es la puerta de entrada a esa
   // escalera, de la que luego se puede ascender a WorldSBK.
   let sspPick = null;
-  if (state.championship === "Moto3" && !lastGood && Math.random() < 0.45) {
+  if (state.championship === "Moto3" && !lastGood && Math.random() < 0.5) {
     sspPick = { team: pickTeamByStrength("Supersport", 68, 73), championship: "Supersport" };
   }
 
@@ -1075,7 +1084,7 @@ function generateMarketOffers() {
   // oferta del Europeo de Moto2 como vía alternativa.
   let moto3ToEuroPick = null;
   if (state.championship === "Moto3" && tenure >= 2 && lastSeason && lastSeason.pos > 5 &&
-      Math.random() < 0.16) { // AJUSTE: 3ª temp/top3/10% → 2ª temp/top5/16%
+      Math.random() < 0.12) { // AJUSTE: 3ª temp/top3/10% → 2ª temp/top5/16% → 12%
     moto3ToEuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 61), championship: "Moto2Euro" };
   }
 
@@ -1089,7 +1098,7 @@ function generateMarketOffers() {
   let moto3TwoSeasonsEuroPick = null;
   const moto3StuckTop4 = state.championship === "Moto3" && state.history.length >= 2 &&
     state.history.slice(-2).every((s) => s.championship === "Moto3" && s.pos > 4);
-  if (moto3StuckTop4 && Math.random() < 0.25) {
+  if (moto3StuckTop4 && Math.random() < 0.18) {
     moto3TwoSeasonsEuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 61), championship: "Moto2Euro" };
   }
 
@@ -1100,7 +1109,7 @@ function generateMarketOffers() {
   // vías hacia esta categoría.
   let juniorToEuroPick = null;
   if ((state.championship === "MotoJunior" || state.championship === "RedBullRookies") &&
-      lastSeason && lastSeason.pos <= 3 && Math.random() < 0.07) { // AJUSTE: 0.05 → 0.07
+      lastSeason && lastSeason.pos <= 3 && Math.random() < 0.04) { // AJUSTE: 0.05 → 0.07
     juniorToEuroPick = { team: pickTeamByStrength("Moto2Euro", 55, 60), championship: "Moto2Euro" };
   }
 
@@ -1126,7 +1135,7 @@ function generateMarketOffers() {
     const moto3Chance = olderThan18 ? 0.04 : 0.08;
     const stockWidth = olderThan18 ? 0.38 : 0.34;
     const sportbikeWidth = olderThan18 ? 0.36 : 0.32;
-    const euroWidth = olderThan18 ? 0.14 : 0.12;
+    const euroWidth = olderThan18 ? 0.07 : 0.06;
     if (r < moto3Chance) {
       juniorStuck18Pick = { team: pickTeamByStrength("Moto3", 50, 55), championship: "Moto3" };
     } else if (r < moto3Chance + stockWidth) {
@@ -1480,12 +1489,13 @@ function generateMarketOffers() {
   // un año más; y una temporada floja abre más salidas a otros campeonatos.
   if (state.age <= 21) stayProb += 0.20;
   if (!promoGood) lateralP += 0.15;
+  if (state.championship === "Moto3" && !promoGood) stayProb += 0.10; // o seguir en Moto3
   // Salidas laterales con sentido según dónde estés (en vez de "subir").
   const lateralOffer = () => {
     const ch = state.championship, opts = [];
     const add = (w, champ, lo, hi) => opts.push({ w, champ, lo, hi });
-    if (ch === "MotoJunior" || ch === "RedBullRookies") { add(3, "Stock600", 46, 54); add(3, "SportBike", 46, 54); add(1.5, "Moto2Euro", 50, 56); }
-    else if (ch === "Moto3") { add(3, "Moto2Euro", 55, 61); add(2, "SportBike", 46, 54); add(1.5, "Supersport", 66, 72); add(1, "Stock600", 48, 54); }
+    if (ch === "MotoJunior" || ch === "RedBullRookies") { add(3, "Stock600", 46, 54); add(3, "SportBike", 46, 54); add(0.7, "Moto2Euro", 50, 56); }
+    else if (ch === "Moto3") { add(2, "Moto2Euro", 55, 61); add(2.8, "SportBike", 46, 54); add(2.3, "Supersport", 66, 72); add(0.5, "Stock600", 48, 54); }
     else if (ch === "Moto2") { add(3, "Supersport", 67, 74); add(2.5, "Moto2Euro", 55, 62); add(2, "NAT", 55, 70); add(0.6, "WorldSBK", 69, 76); }
     else if (ch === "Supersport") { add(2, "NAT", 55, 70); add(1.5, "SportBike", 46, 54); add(1, "Moto2Euro", 56, 62); }
     else if (ch === "SportBike") { add(3, "Stock600", 46, 54); add(2, "NAT", 52, 66); add(1.5, "Moto2Euro", 55, 60); }
@@ -1693,6 +1703,10 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   if (champPosition <= 3) perfFactor += (4 - champPosition) * 0.3;
   else if (champPosition >= 20) perfFactor -= 0.4;
   perfFactor = clamp(perfFactor, -1.2, 2);
+  // Un buen resultado pesa menos en campeonatos de menor nivel: ganar el
+  // Europeo de Moto2 no puede subir la media como ganar en un Mundial.
+  const lowTier = { Moto2Euro: 0.7, Stock600: 0.85 }[state.championship];
+  if (lowTier && perfFactor > 0) perfFactor *= lowTier;
 
   // 4. Azar — más amplio en pilotos irregulares (baja "consistency").
   const luckSpread = lerp(0.5, 2.4, 1 - p.consistency);
@@ -2000,8 +2014,27 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // que hagas ("loyal"), a veces el mercado se mueve mucho ("hot"), a veces
   // llegan muchas ofertas de otros campeonatos ("lateral"), y a veces el
   // año es duro y se te cierran puertas ("cold").
-  { const m = Math.random();
-    state.marketMood = m < 0.20 ? "cold" : m < 0.35 ? "loyal" : m < 0.60 ? "normal" : m < 0.80 ? "hot" : "lateral"; }
+  // RASGO DE CARRERA (oculto, se sortea una vez por partida): cómo se mueve
+  // tu entorno. Hace que cada partida tenga su propio carácter: con buenos
+  // contactos casi siempre hay mercado; un piloto "fiel" tiene más
+  // renovaciones; un "aventurero" recibe más salidas a otros campeonatos;
+  // uno "discreto" pasa más desapercibido y tiene años fríos.
+  if (!state.careerTrait) {
+    state.careerTrait = ["conectado", "fiel", "aventurero", "discreto", "equilibrado", "equilibrado"][randInt(0, 5)];
+  }
+  // pesos: [cold, loyal, normal, hot, lateral]
+  const traitW = {
+    conectado:   [0.10, 0.10, 0.22, 0.32, 0.26],
+    fiel:        [0.12, 0.34, 0.28, 0.14, 0.12],
+    aventurero:  [0.16, 0.08, 0.22, 0.20, 0.34],
+    discreto:    [0.34, 0.14, 0.28, 0.12, 0.12],
+    equilibrado: [0.20, 0.15, 0.25, 0.20, 0.20],
+  }[state.careerTrait] || [0.20, 0.15, 0.25, 0.20, 0.20];
+  { let m = Math.random();
+    const names = ["cold", "loyal", "normal", "hot", "lateral"];
+    let pick = "normal";
+    for (let i = 0; i < names.length; i++) { m -= traitW[i]; if (m <= 0) { pick = names[i]; break; } }
+    state.marketMood = pick; }
   const mm = state.marketMood;
   const mediocre = !thisSeasonGood && !thisSeasonBad;
   if (mm === "loyal") {
