@@ -776,6 +776,11 @@ function generateMarketOffers() {
     { name: state.team.name, strength: state.team.strength, color: teamColor(state.team.name, state.championship) };
 
   const lastGood = lastSeasonWasGood();
+  // Para SUBIR de categoría hace falta haberlo hecho bien de verdad: podios,
+  // victorias o top 5. (lastGood, más laxo, sigue valiendo para vías laterales.)
+  const lastForPromo = state.history[state.history.length - 1];
+  const promoGood = !!lastForPromo &&
+    (lastForPromo.pod >= 3 || lastForPromo.cg >= 1 || lastForPromo.pos <= 5);
   const lastSeason = state.history[state.history.length - 1];
 
   // No renovación: si la temporada ha sido claramente mala (fuera del
@@ -905,7 +910,7 @@ function generateMarketOffers() {
 
   const buildSpecialPicks = () => {
   let targetChamp = null;
-  if (lastGood && (tenureOk || (exceptional && Math.random() < 0.25) || guaranteedPromotion)) {
+  if (promoGood && (tenureOk || (exceptional && Math.random() < 0.25) || guaranteedPromotion)) {
     // Fase de formación: FIM JuniorGP y Red Bull Rookies Cup desembocan en
     // Moto3; Yamaha R3 Cup desemboca en SportBike.
     if (state.championship === "MotoJunior" || state.championship === "RedBullRookies") {
@@ -1093,7 +1098,7 @@ function generateMarketOffers() {
   // simplemente seguir un año más en la categoría júnior.
   let juniorStuck18Pick = null;
   if ((state.championship === "MotoJunior" || state.championship === "RedBullRookies") &&
-      state.age >= 18 && !targetChamp) {
+      state.age >= 17 && !targetChamp) {
     const r = Math.random();
     // AJUSTE (nuevo): se añade el Europeo de Moto2 como tercera vía
     // lateral, y cuanto más se alarga la fase júnior, menos probable Moto3
@@ -1429,44 +1434,42 @@ function generateMarketOffers() {
   return picks;
   };
 
-  // CADA oferta extra sale de una tirada independiente con los porcentajes
-  // de la situación (subida, vías laterales, bajada...). Si en una tirada no
-  // sale ninguna vía especial, esa tarjeta es la de "mantener" (otro equipo
-  // de la misma categoría). Antes solo la primera tarjeta seguía los
-  // porcentajes y el resto se rellenaba al azar.
+  // Cada oferta extra sale de su PROPIA tirada con los porcentajes de la
+  // situación, así que nada es lineal. Reglas:
+  //  - Subida de categoría (promo): solo existe si la temporada fue buena.
+  //    Se garantiza una; si fuiste CAMPEÓN, todas las tarjetas extra son de
+  //    la categoría superior (equipos distintos), no hay "quedarse" extra;
+  //    si fuiste 2º-3º, hasta dos.
+  //  - Cada destino distinto (campeonato) sale una sola vez.
+  //  - Si no sale ninguna vía especial, la tarjeta es otro equipo de tu
+  //    categoría, pero NO cuando acabas de ganar y hay ascenso.
+  //  - "Clima" del mercado (cold/normal/hot) cambia cuánto se mueve el año.
   const picks = [];
-  // El paso atrás garantizado (repeatedNonRenewalPick) va primero.
   if (repeatedNonRenewalPick) picks.push(repeatedNonRenewalPick);
   const sameOffer = (a, b) => a.team.name === b.team.name && a.championship === b.championship;
-  // FIX: antes se cogía SIEMPRE la primera candidata de una lista con orden
-  // fijo (y la subida de categoría iba primera y se repetía con otro equipo
-  // en cada hueco: 2-3 tarjetas de MotoGP). Ahora:
-  //  - la subida (si existe) se garantiza UNA vez, sin repetirse;
-  //  - un destino (campeonato distinto al actual) aparece una sola vez;
-  //  - entre las candidatas que salgan se elige al azar, y con un 20% de
-  //    probabilidad el hueco es simplemente otro equipo de tu categoría.
-  const destTaken = (c) => !forcedExit && c.championship !== state.championship &&
+  const destTaken = (c) => !c.promo && !forcedExit && c.championship !== state.championship &&
     picks.some((p) => p.championship === c.championship);
+  const champion = !!lastSeason && lastSeason.pos === 1;
+  const maxPromo = champion ? 3 : (lastSeason && lastSeason.pos <= 3 ? 2 : 1);
+  const mood = state.marketMood || "normal";
+  const keepProb = mood === "cold" ? 0.70 : mood === "hot" ? 1 : 0.88;
+  const stayProb = mood === "cold" ? 0.30 : mood === "hot" ? 0.08 : 0.15;
+  const nPromo = () => picks.filter((p) => p.promo).length;
   for (let slot = 0; slot < extraPicksNeeded && picks.length < extraPicksNeeded; slot++) {
-    // Clima del mercado: en "cold" muchas vías laterales/de bajada no llegan
-    // (te ofrecen renovar u otro equipo de tu categoría); en "hot" llegan casi todas.
-    const mood = state.marketMood || "normal";
-    const keepProb = mood === "cold" ? 0.55 : mood === "hot" ? 1 : 0.8;
-    const stayProb = mood === "cold" ? 0.38 : mood === "hot" ? 0.1 : 0.2;
     const cands = buildSpecialPicks()
       .filter((c) => !picks.some((p) => sameOffer(p, c)) && !destTaken(c))
       .filter((c) => c.promo || Math.random() < keepProb);
-    if (!cands.length) continue;
-    const promoPool = cands.filter((c) => c.promo);
-    if (promoPool.length && !picks.some((p) => p.promo)) {
+    const promoPool = nPromo() < maxPromo ? cands.filter((c) => c.promo) : [];
+    if (promoPool.length && (nPromo() === 0 || champion)) {
       picks.push(promoPool[randInt(0, promoPool.length - 1)]);
       continue;
     }
-    if (!forcedExit && sameLevelCandidates.length && Math.random() < stayProb) {
+    const hasPromoRoute = cands.some((c) => c.promo);
+    if (!forcedExit && !(champion && hasPromoRoute) && sameLevelCandidates.length && Math.random() < stayProb) {
       picks.push(sameLevelCandidates.shift());
       continue;
     }
-    const pool = cands.filter((c) => !c.promo || !picks.some((p) => p.promo));
+    const pool = cands.filter((c) => !c.promo);
     if (pool.length) picks.push(pool[randInt(0, pool.length - 1)]);
   }
   if (picks.length > extraPicksNeeded) picks.length = extraPicksNeeded;
@@ -1479,6 +1482,16 @@ function generateMarketOffers() {
     while (picks.length < extraPicksNeeded && attempts++ < 40) {
       const extra = roll();
       if (!picks.some((p) => sameOffer(p, extra))) picks.push(extra);
+    }
+  }
+  if (champion && picks.some((p) => p.promo)) {
+    // Campeón con ascenso disponible: las tarjetas que falten son más
+    // equipos de la categoría superior, nunca de la que acabas de ganar.
+    const up = picks.find((p) => p.promo).championship;
+    const more = (TEAMS[up] || []).filter((t) => !picks.some((p) => p.team.name === t.name && p.championship === up))
+      .sort(() => Math.random() - 0.5);
+    while (picks.length < extraPicksNeeded && more.length) {
+      picks.push({ team: more.shift(), championship: up, promo: true });
     }
   }
   while (!forcedExit && picks.length < extraPicksNeeded && sameLevelCandidates.length) {
