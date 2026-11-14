@@ -779,8 +779,10 @@ function generateMarketOffers() {
   // Para SUBIR de categoría hace falta haberlo hecho bien de verdad: podios,
   // victorias o top 5. (lastGood, más laxo, sigue valiendo para vías laterales.)
   const lastForPromo = state.history[state.history.length - 1];
+  // Top 5 (top 4 en SportBike); solo con muchas victorias vale un 6º-7º.
+  const promoPosCap = state.championship === "SportBike" ? 4 : 5;
   const promoGood = !!lastForPromo &&
-    (lastForPromo.pod >= 3 || lastForPromo.cg >= 1 || lastForPromo.pos <= 5);
+    (lastForPromo.pos <= promoPosCap || (lastForPromo.pos <= 7 && lastForPromo.cg >= 3));
   const lastSeason = state.history[state.history.length - 1];
 
   // No renovación: si la temporada ha sido claramente mala (fuera del
@@ -908,6 +910,18 @@ function generateMarketOffers() {
     ? (noRenewalCard ? 2 : 1)
     : (noRenewalCard ? 3 : 2);
 
+  // Equipos de la categoría superior ordenados por nivel; el tramo que se
+  // ofrece depende del resultado: campeón → los mejores, podio → buenos,
+  // top 5 → pelotón, peor → los de abajo. Así un 5º no recibe un equipo oficial.
+  const promoWindowFor = (champ) => {
+    const sorted = [...(TEAMS[champ] || [])].sort((a, b) => b.strength - a.strength);
+    const n = sorted.length;
+    const pos = lastSeason ? lastSeason.pos : 8;
+    const [f, t] = pos === 1 ? [0, 0.45] : pos <= 3 ? [0.1, 0.7] : pos <= 5 ? [0.4, 1] : [0.6, 1];
+    const win = sorted.slice(Math.floor(f * n), Math.max(Math.ceil(t * n), Math.floor(f * n) + 1));
+    return win.sort(() => Math.random() - 0.5);
+  };
+
   const buildSpecialPicks = () => {
   let targetChamp = null;
   if (promoGood && (tenureOk || (exceptional && Math.random() < 0.25) || guaranteedPromotion)) {
@@ -936,7 +950,11 @@ function generateMarketOffers() {
       // AJUSTE: antes bastaba con el top 7. Ahora: top 3 (ascenso directo) o
       // top 5 habiendo cumplido al menos 2 temporadas en Moto2.
       const m2pos = lastSeason ? lastSeason.pos : 99;
-      if (m2pos <= 3 || (m2pos <= 5 && tenure >= 2)) targetChamp = "MotoGP";
+      // LÓGICA: MotoGP aprieta con la edad. Hasta 25 años vale el podio (o
+      // top 5 con 2+ años y 24 o menos); con 26-27 solo siendo top 2; con
+      // 28-29 solo siendo campeón; más allá, nunca desde Moto2.
+      const gpAgeOk = state.age <= 25 || (state.age <= 27 && m2pos <= 2) || (state.age <= 29 && m2pos === 1);
+      if (gpAgeOk && (m2pos <= 3 || (m2pos <= 5 && tenure >= 2 && state.age <= 24))) targetChamp = "MotoGP";
     }
     else if (state.championship === "Supersport") targetChamp = "WorldSBK";
     else if (state.championship === "SportBike") targetChamp = "Supersport";
@@ -1400,9 +1418,8 @@ function generateMarketOffers() {
 
   const picks = [];
   if (targetChamp) {
-    const promoCandidates = TEAMS[targetChamp]
-      .map((t) => ({ team: t, championship: targetChamp, promo: true }))
-      .sort(() => Math.random() - 0.5);
+    const promoCandidates = promoWindowFor(targetChamp)
+      .map((t) => ({ team: t, championship: targetChamp, promo: true }));
     if (promoCandidates.length) picks.push(promoCandidates[0]);
   }
   baselineLaterals.forEach((p) => picks.push(p));
@@ -1450,22 +1467,55 @@ function generateMarketOffers() {
   const destTaken = (c) => !c.promo && !forcedExit && c.championship !== state.championship &&
     picks.some((p) => p.championship === c.championship);
   const champion = !!lastSeason && lastSeason.pos === 1;
+  // Campeón o 2º: todas las tarjetas extra pueden ser de la categoría
+  // superior; 3º: a veces. Más abajo, una sola (si la hay).
+  const multiPromo = champion || (!!lastSeason && lastSeason.pos === 2) ||
+    (!!lastSeason && lastSeason.pos === 3 && Math.random() < 0.6);
   const maxPromo = champion ? 3 : (lastSeason && lastSeason.pos <= 3 ? 2 : 1);
   const mood = state.marketMood || "normal";
-  const keepProb = mood === "cold" ? 0.70 : mood === "hot" ? 1 : 0.88;
-  const stayProb = mood === "cold" ? 0.30 : mood === "hot" ? 0.08 : 0.15;
+  const keepProb = { cold: 0.65, loyal: 0.5, normal: 0.88, hot: 1, lateral: 0.9 }[mood] ?? 0.88;
+  let stayProb = { cold: 0.30, loyal: 0.38, normal: 0.15, hot: 0.06, lateral: 0.08 }[mood] ?? 0.15;
+  let lateralP = { cold: 0.12, loyal: 0.04, normal: 0.20, hot: 0.35, lateral: 0.55 }[mood] ?? 0.20;
+  // LÓGICA: siendo joven (<=21) en las escaleras bajas es muy normal seguir
+  // un año más; y una temporada floja abre más salidas a otros campeonatos.
+  if (state.age <= 21) stayProb += 0.20;
+  if (!promoGood) lateralP += 0.15;
+  // Salidas laterales con sentido según dónde estés (en vez de "subir").
+  const lateralOffer = () => {
+    const ch = state.championship, opts = [];
+    const add = (w, champ, lo, hi) => opts.push({ w, champ, lo, hi });
+    if (ch === "MotoJunior" || ch === "RedBullRookies") { add(3, "Stock600", 46, 54); add(3, "SportBike", 46, 54); add(1.5, "Moto2Euro", 50, 56); }
+    else if (ch === "Moto3") { add(3, "Moto2Euro", 55, 61); add(2, "SportBike", 46, 54); add(1.5, "Supersport", 66, 72); add(1, "Stock600", 48, 54); }
+    else if (ch === "Moto2") { add(3, "Supersport", 67, 74); add(2.5, "Moto2Euro", 55, 62); add(2, "NAT", 55, 70); add(0.6, "WorldSBK", 69, 76); }
+    else if (ch === "Supersport") { add(2, "NAT", 55, 70); add(1.5, "SportBike", 46, 54); add(1, "Moto2Euro", 56, 62); }
+    else if (ch === "SportBike") { add(3, "Stock600", 46, 54); add(2, "NAT", 52, 66); add(1.5, "Moto2Euro", 55, 60); }
+    else if (ch === "Stock600") { add(2, "SportBike", 50, 58); add(1.5, "NAT", 50, 64); add(1, "Moto2Euro", 52, 58); }
+    if (!opts.length) return null;
+    let r = Math.random() * opts.reduce((a, o) => a + o.w, 0), o = opts[0];
+    for (const x of opts) { r -= x.w; if (r <= 0) { o = x; break; } }
+    if (o.champ === "NAT") return pickGuaranteedNationalOffer(o.lo, o.hi);
+    return { team: pickTeamByStrength(o.champ, o.lo, o.hi), championship: o.champ };
+  };
   const nPromo = () => picks.filter((p) => p.promo).length;
   for (let slot = 0; slot < extraPicksNeeded && picks.length < extraPicksNeeded; slot++) {
     const cands = buildSpecialPicks()
       .filter((c) => !picks.some((p) => sameOffer(p, c)) && !destTaken(c))
       .filter((c) => c.promo || Math.random() < keepProb);
     const promoPool = nPromo() < maxPromo ? cands.filter((c) => c.promo) : [];
-    if (promoPool.length && (nPromo() === 0 || champion)) {
+    if (promoPool.length && (nPromo() === 0 || multiPromo)) {
       picks.push(promoPool[randInt(0, promoPool.length - 1)]);
       continue;
     }
     const hasPromoRoute = cands.some((c) => c.promo);
-    if (!forcedExit && !(champion && hasPromoRoute) && sameLevelCandidates.length && Math.random() < stayProb) {
+    // Salida lateral lógica de la categoría (según el perfil de la temporada)
+    if (!forcedExit && !(multiPromo && hasPromoRoute) && Math.random() < lateralP) {
+      const lat = lateralOffer();
+      if (lat && lat.championship !== state.championship && !picks.some((p) => p.championship === lat.championship)) {
+        picks.push(lat);
+        continue;
+      }
+    }
+    if (!forcedExit && !(multiPromo && hasPromoRoute) && sameLevelCandidates.length && Math.random() < stayProb) {
       picks.push(sameLevelCandidates.shift());
       continue;
     }
@@ -1484,12 +1534,11 @@ function generateMarketOffers() {
       if (!picks.some((p) => sameOffer(p, extra))) picks.push(extra);
     }
   }
-  if (champion && picks.some((p) => p.promo)) {
+  if (multiPromo && picks.some((p) => p.promo)) {
     // Campeón con ascenso disponible: las tarjetas que falten son más
     // equipos de la categoría superior, nunca de la que acabas de ganar.
     const up = picks.find((p) => p.promo).championship;
-    const more = (TEAMS[up] || []).filter((t) => !picks.some((p) => p.team.name === t.name && p.championship === up))
-      .sort(() => Math.random() - 0.5);
+    const more = promoWindowFor(up).filter((t) => !picks.some((p) => p.team.name === t.name && p.championship === up));
     while (picks.length < extraPicksNeeded && more.length) {
       picks.push({ team: more.shift(), championship: up, promo: true });
     }
@@ -1946,14 +1995,22 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   const thisSeasonBad = !thisSeasonGood && champPosition >= 15;
   // AJUSTE (más variedad): hundido (15º o peor) = 15% de que no te renueven;
   // temporada floja (9º-14º, sin podios ni victorias) = 6%.
-  state.pendingNonRenewal = (thisSeasonBad && Math.random() < 0.15) ||
-    (!thisSeasonGood && !thisSeasonBad && Math.random() < 0.06);
-  // "Clima" del mercado esta temporada: se decide UNA vez aquí (estable al
-  // re-renderizar) y hace que el mismo resultado no lleve siempre a lo
-  // mismo — a veces el mercado se mueve mucho (salidas laterales,
-  // cambios de equipo) y a veces te quedas tranquilo con tu renovación.
+  // PERFIL de la temporada de mercado (se decide UNA vez aquí, estable al
+  // re-renderizar). Da personalidad: a veces tu equipo te renueva hagas lo
+  // que hagas ("loyal"), a veces el mercado se mueve mucho ("hot"), a veces
+  // llegan muchas ofertas de otros campeonatos ("lateral"), y a veces el
+  // año es duro y se te cierran puertas ("cold").
   { const m = Math.random();
-    state.marketMood = m < 0.25 ? "cold" : m < 0.75 ? "normal" : "hot"; }
+    state.marketMood = m < 0.20 ? "cold" : m < 0.35 ? "loyal" : m < 0.60 ? "normal" : m < 0.80 ? "hot" : "lateral"; }
+  const mm = state.marketMood;
+  const mediocre = !thisSeasonGood && !thisSeasonBad;
+  if (mm === "loyal") {
+    state.pendingNonRenewal = false; // te renuevan aunque la temporada sea mala
+  } else if (mm === "cold") {
+    state.pendingNonRenewal = (thisSeasonBad && Math.random() < 0.38) || (mediocre && Math.random() < 0.14);
+  } else {
+    state.pendingNonRenewal = (thisSeasonBad && Math.random() < 0.15) || (mediocre && Math.random() < 0.06);
+  }
   if (state.championship === "Stock600" && champPosition >= 4 && champPosition <= 5 &&
       state.age >= 26 && (state.seasonsInSeries || 1) >= 3) {
     state.pendingNonRenewal = Math.random() < 0.6; // renovar se vuelve muy difícil
