@@ -1448,15 +1448,21 @@ function generateMarketOffers() {
   const destTaken = (c) => !forcedExit && c.championship !== state.championship &&
     picks.some((p) => p.championship === c.championship);
   for (let slot = 0; slot < extraPicksNeeded && picks.length < extraPicksNeeded; slot++) {
+    // Clima del mercado: en "cold" muchas vías laterales/de bajada no llegan
+    // (te ofrecen renovar u otro equipo de tu categoría); en "hot" llegan casi todas.
+    const mood = state.marketMood || "normal";
+    const keepProb = mood === "cold" ? 0.55 : mood === "hot" ? 1 : 0.8;
+    const stayProb = mood === "cold" ? 0.38 : mood === "hot" ? 0.1 : 0.2;
     const cands = buildSpecialPicks()
-      .filter((c) => !picks.some((p) => sameOffer(p, c)) && !destTaken(c));
+      .filter((c) => !picks.some((p) => sameOffer(p, c)) && !destTaken(c))
+      .filter((c) => c.promo || Math.random() < keepProb);
     if (!cands.length) continue;
     const promoPool = cands.filter((c) => c.promo);
     if (promoPool.length && !picks.some((p) => p.promo)) {
       picks.push(promoPool[randInt(0, promoPool.length - 1)]);
       continue;
     }
-    if (!forcedExit && sameLevelCandidates.length && Math.random() < 0.2) {
+    if (!forcedExit && sameLevelCandidates.length && Math.random() < stayProb) {
       picks.push(sameLevelCandidates.shift());
       continue;
     }
@@ -1772,12 +1778,18 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // se le aplique.
   const isMotoStepUpRookie = isRookieSeason &&
     (state.championship === "Moto2" || state.championship === "Moto3");
+  // AJUSTE (más azar): "forma de la temporada" del piloto — un año puede
+  // salir algo mejor o peor de lo que dice su rating, sin que se note a
+  // simple vista (sd ~3.5 puntos, casi nunca más de ±5).
+  const seasonForm = noise(3.5);
   const playerRating = state.ovr * w.rider + state.team.strength * w.team
-    + (isMoto3RookieSeason ? 2 : 0);
+    + (isMoto3RookieSeason ? 2 : 0) + seasonForm;
 
   // Nivel base de cada rival para toda la temporada (su sitio dentro del
   // pelotón), heredado (con una ligera deriva) de la temporada anterior.
-  const rivalBase = getRivalField(state.championship);
+  // AJUSTE (más azar): cada rival también tiene su propia forma esa
+  // temporada (sd ~2.5), para que el pelotón no sea tan estable año a año.
+  const rivalBase = getRivalField(state.championship).map((r) => r + noise(2.5));
   const rivalPoints = new Array(GRID_RIVALS).fill(0);
 
   // ¿Es el piloto, de verdad, uno de los 3 mejores del pelotón esta
@@ -1792,8 +1804,8 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
     ce++;
 
     // Clasificación (pole): quién sale más rápido ese fin de semana.
-    const qPlayer = playerRating + noise(9);
-    const qRivals = rivalBase.map((r) => r + noise(9));
+    const qPlayer = playerRating + noise(10);
+    const qRivals = rivalBase.map((r) => r + noise(10));
     if (qRivals.every((r) => r < qPlayer)) pol++;
 
     // Posible abandono del piloto.
@@ -1810,8 +1822,8 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
       : 0;
 
     // Resultado de carrera: cada uno con su variación de forma del día.
-    const rPlayer = playerRating + noise(11) + inspiredDay;
-    const rRivals = rivalBase.map((r) => r + noise(10));
+    const rPlayer = playerRating + noise(12) + inspiredDay;
+    const rRivals = rivalBase.map((r) => r + noise(11));
 
     const finishers = rRivals.map((perf, idx) => ({ idx, perf }));
     if (!playerDNF) finishers.push({ idx: -1, perf: rPlayer });
@@ -1919,7 +1931,16 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // categoría (ver repeatedNonRenewalPick en generateMarketOffers).
   const thisSeasonGood = pod >= 3 || cg >= 1 || champPosition <= 8;
   const thisSeasonBad = !thisSeasonGood && champPosition >= 15;
-  state.pendingNonRenewal = thisSeasonBad && Math.random() < 0.15;
+  // AJUSTE (más variedad): hundido (15º o peor) = 15% de que no te renueven;
+  // temporada floja (9º-14º, sin podios ni victorias) = 6%.
+  state.pendingNonRenewal = (thisSeasonBad && Math.random() < 0.15) ||
+    (!thisSeasonGood && !thisSeasonBad && Math.random() < 0.06);
+  // "Clima" del mercado esta temporada: se decide UNA vez aquí (estable al
+  // re-renderizar) y hace que el mismo resultado no lleve siempre a lo
+  // mismo — a veces el mercado se mueve mucho (salidas laterales,
+  // cambios de equipo) y a veces te quedas tranquilo con tu renovación.
+  { const m = Math.random();
+    state.marketMood = m < 0.25 ? "cold" : m < 0.75 ? "normal" : "hot"; }
   if (state.championship === "Stock600" && champPosition >= 4 && champPosition <= 5 &&
       state.age >= 26 && (state.seasonsInSeries || 1) >= 3) {
     state.pendingNonRenewal = Math.random() < 0.6; // renovar se vuelve muy difícil
