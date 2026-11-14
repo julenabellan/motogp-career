@@ -928,7 +928,10 @@ function generateMarketOffers() {
       // AJUSTE (nuevo): fuera del top 7 del campeonato, ninguna oferta de
       // MotoGP puede llegar esta temporada, aunque el resto de requisitos
       // (temporada "buena", tiempo cumplido, etc.) se cumplan.
-      if (lastSeason && lastSeason.pos <= 7) targetChamp = "MotoGP";
+      // AJUSTE: antes bastaba con el top 7. Ahora: top 3 (ascenso directo) o
+      // top 5 habiendo cumplido al menos 2 temporadas en Moto2.
+      const m2pos = lastSeason ? lastSeason.pos : 99;
+      if (m2pos <= 3 || (m2pos <= 5 && tenure >= 2)) targetChamp = "MotoGP";
     }
     else if (state.championship === "Supersport") targetChamp = "WorldSBK";
     else if (state.championship === "SportBike") targetChamp = "Supersport";
@@ -998,7 +1001,7 @@ function generateMarketOffers() {
   //    aparece una oferta de WorldSBK, y muy de vez en cuando una de
   //    Supersport en su lugar.
   let wsbkPick = null;
-  if (state.championship === "MotoGP" && state.age >= 32 && !lastGood) {
+  if (state.championship === "MotoGP" && state.age >= 32 && !lastGood && Math.random() < 0.6) {
     const [lo, hi] = state.ovr >= 85 ? [76, 82] : [69, 77];
     wsbkPick = { team: pickTeamByStrength("WorldSBK", lo, hi), championship: "WorldSBK" };
   }
@@ -1039,7 +1042,7 @@ function generateMarketOffers() {
   // seguir estancado en el Mundial de motos. Es la puerta de entrada a esa
   // escalera, de la que luego se puede ascender a WorldSBK.
   let sspPick = null;
-  if (state.championship === "Moto3" && !lastGood) {
+  if (state.championship === "Moto3" && !lastGood && Math.random() < 0.45) {
     sspPick = { team: pickTeamByStrength("Supersport", 68, 73), championship: "Supersport" };
   }
 
@@ -1370,13 +1373,34 @@ function generateMarketOffers() {
     nationalLateralPick = { team: pickTeamByStrength(champ, cs - 8, cs + 8), championship: champ };
   }
 
+  // Salidas laterales "de base": no dependen de que la temporada vaya mal
+  // ni de ser un campeón, solo de que puedan pasar (probabilidades bajas).
+  const baselineLaterals = [];
+  const addBase = (chance, to, lo, hi) => {
+    if (Math.random() < chance) {
+      baselineLaterals.push({ team: pickTeamByStrength(to, lo, hi), championship: to });
+    }
+  };
+  if (state.championship === "Moto2") {
+    addBase(0.07, "Supersport", 66, 74);
+    addBase(0.03, "WorldSBK", 69, 76);
+  } else if (state.championship === "Moto3") {
+    addBase(0.04, "SportBike", 46, 54);
+    addBase(0.03, "Supersport", 66, 72);
+  } else if (state.championship === "MotoGP") {
+    addBase(0.03, "WorldSBK", 72, 80);
+  } else if (state.championship === "Supersport" && state.age >= 18) {
+    addBase(0.03, "Moto2", 66, 72);
+  }
+
   const picks = [];
   if (targetChamp) {
     const promoCandidates = TEAMS[targetChamp]
-      .map((t) => ({ team: t, championship: targetChamp }))
+      .map((t) => ({ team: t, championship: targetChamp, promo: true }))
       .sort(() => Math.random() - 0.5);
     if (promoCandidates.length) picks.push(promoCandidates[0]);
   }
+  baselineLaterals.forEach((p) => picks.push(p));
   if (wsbkPick) picks.push(wsbkPick);
   if (sspPick) picks.push(sspPick);
   if (nationalPromoWsbk) picks.push(nationalPromoWsbk);
@@ -1414,9 +1438,30 @@ function generateMarketOffers() {
   // El paso atrás garantizado (repeatedNonRenewalPick) va primero.
   if (repeatedNonRenewalPick) picks.push(repeatedNonRenewalPick);
   const sameOffer = (a, b) => a.team.name === b.team.name && a.championship === b.championship;
+  // FIX: antes se cogía SIEMPRE la primera candidata de una lista con orden
+  // fijo (y la subida de categoría iba primera y se repetía con otro equipo
+  // en cada hueco: 2-3 tarjetas de MotoGP). Ahora:
+  //  - la subida (si existe) se garantiza UNA vez, sin repetirse;
+  //  - un destino (campeonato distinto al actual) aparece una sola vez;
+  //  - entre las candidatas que salgan se elige al azar, y con un 20% de
+  //    probabilidad el hueco es simplemente otro equipo de tu categoría.
+  const destTaken = (c) => !forcedExit && c.championship !== state.championship &&
+    picks.some((p) => p.championship === c.championship);
   for (let slot = 0; slot < extraPicksNeeded && picks.length < extraPicksNeeded; slot++) {
-    const pick = buildSpecialPicks().find((c) => !picks.some((p) => sameOffer(p, c)));
-    if (pick) picks.push(pick);
+    const cands = buildSpecialPicks()
+      .filter((c) => !picks.some((p) => sameOffer(p, c)) && !destTaken(c));
+    if (!cands.length) continue;
+    const promoPool = cands.filter((c) => c.promo);
+    if (promoPool.length && !picks.some((p) => p.promo)) {
+      picks.push(promoPool[randInt(0, promoPool.length - 1)]);
+      continue;
+    }
+    if (!forcedExit && sameLevelCandidates.length && Math.random() < 0.2) {
+      picks.push(sameLevelCandidates.shift());
+      continue;
+    }
+    const pool = cands.filter((c) => !c.promo || !picks.some((p) => p.promo));
+    if (pool.length) picks.push(pool[randInt(0, pool.length - 1)]);
   }
   if (picks.length > extraPicksNeeded) picks.length = extraPicksNeeded;
   // Salida obligatoria (campeón de Moto2 Europeo / Stock 600): si aún faltan
@@ -1633,7 +1678,9 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // primera vez en MotoGP o en WorldSBK (Superbikes) se suma un +2 de OVR
   // FIJO, además de toda la subida "normal" ya calculada arriba, para que
   // el piloto llegue mejor preparado a plantar cara desde el primer año.
-  if (categoryChanged && (state.championship === "MotoGP" || state.championship === "WorldSBK")) {
+  // FIX: antes se sumaba también al cambiar de equipo dentro de MotoGP/WorldSBK.
+  if (previousChampionship != null && previousChampionship !== state.championship &&
+      (state.championship === "MotoGP" || state.championship === "WorldSBK")) {
     rounded += 2;
   }
 
@@ -1660,7 +1707,12 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // Se usa para exigir un número mínimo de temporadas antes de poder subir
   // de categoría (ver generateMarketOffers) — así el ascenso deja de
   // depender solo de tener una temporada buena y se vuelve más gradual.
-  if (categoryChanged) {
+  // FIX: antes se reiniciaba también al cambiar solo de EQUIPO dentro del
+  // mismo campeonato, así que la permanencia nunca se acumulaba (y el umbral
+  // de ascenso se re-sorteaba en cada cambio de equipo, con un 10% de
+  // "ascenso relámpago" cada vez). Ahora solo cuenta el cambio de campeonato.
+  const champSwitch = previousChampionship != null && previousChampionship !== state.championship;
+  if (champSwitch) {
     state.seasonsInChamp = 1;
     state.promotionReadyAt = pickPromotionThreshold(state.championship);
   } else {
@@ -1872,7 +1924,9 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
       state.age >= 26 && (state.seasonsInSeries || 1) >= 3) {
     state.pendingNonRenewal = Math.random() < 0.6; // renovar se vuelve muy difícil
   }
-  state.nonRenewalsInChamp = categoryChanged
+  // FIX: tras una no renovación SIEMPRE cambias de equipo, así que con
+  // categoryChanged el contador se reiniciaba y nunca llegaba a 2.
+  state.nonRenewalsInChamp = champSwitch
     ? (state.pendingNonRenewal ? 1 : 0)
     : (state.nonRenewalsInChamp || 0) + (state.pendingNonRenewal ? 1 : 0);
 
