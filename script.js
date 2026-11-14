@@ -222,6 +222,7 @@ function buildCountryGrid(filter = "") {
       el.addEventListener("click", () => {
         draft.nacionalidad = c;
         $("#btn-to-debut").disabled = false;
+        $("#random-country-result").innerHTML = "";
         buildCountryGrid($("#input-search-country").value);
       });
       grid.appendChild(el);
@@ -229,6 +230,19 @@ function buildCountryGrid(filter = "") {
 }
 
 $("#input-search-country").addEventListener("input", (e) => buildCountryGrid(e.target.value));
+
+// País aleatorio: elige uno al azar, lo marca como seleccionado y avisa de
+// cuál ha tocado (con su bandera).
+$("#btn-random-country").addEventListener("click", () => {
+  const c = COUNTRIES[randInt(0, COUNTRIES.length - 1)];
+  draft.nacionalidad = c;
+  $("#btn-to-debut").disabled = false;
+  $("#input-search-country").value = "";
+  buildCountryGrid();
+  $("#random-country-result").innerHTML = `Te ha tocado: ${flagImg(c.code, "flag-img flag-img-lg")} <span>${c.name}</span>`;
+  const sel = $("#country-grid .country-item.selected");
+  if (sel) sel.scrollIntoView({ block: "center", behavior: "smooth" });
+});
 $("#btn-back-identidad").addEventListener("click", () => showScreen("screen-identidad"));
 
 $("#btn-to-debut").addEventListener("click", () => {
@@ -498,10 +512,12 @@ function renderHistory(justSimulated = false) {
   body.innerHTML = "";
 
   // Fila de la temporada actual (aún sin disputar)
-  const rows = [...state.history, {
-    age: state.age, team: state.team.name, ovr: state.ovr,
-    championship: state.championship, disputed: false,
-  }];
+  const rows = state.retirementPending
+    ? [...state.history]
+    : [...state.history, {
+        age: state.age, team: state.team.name, ovr: state.ovr,
+        championship: state.championship, disputed: false,
+      }];
 
   rows.forEach((s, idx) => {
     const row = document.createElement("div");
@@ -563,6 +579,25 @@ function renderMarket() {
   const wrap = $("#market-offers");
   wrap.innerHTML = "";
   wrap.classList.remove("offers-locked");
+
+  // Carrera terminada: no hay más ofertas, solo la opción de pasar al
+  // resumen cuando el jugador quiera.
+  if (state.retirementPending) {
+    $("#market-hint").textContent = "Has disputado tu última temporada";
+    $("#market-hint").classList.remove("market-hint-warning");
+    const card = document.createElement("div");
+    card.className = "offer-card retire-option card-enter";
+    card.innerHTML = `
+      <div class="offer-top">
+        <span class="offer-team-name">Ver resumen de carrera</span>
+        <span class="offer-champ-badge">Fin de carrera</span>
+      </div>
+    `;
+    card.addEventListener("click", () => retireCareer());
+    card.addEventListener("animationend", () => card.classList.remove("card-enter"), { once: true });
+    wrap.appendChild(card);
+    return;
+  }
 
   const offers = generateMarketOffers();
   const renewed = offers.some((o) => o.isCurrent);
@@ -1099,6 +1134,26 @@ function generateMarketOffers() {
   //    posibilidad de que sea Supersport en su lugar — o, la mayoría de
   //    las veces que no se activa ninguna de las dos, simplemente sigue
   //    en Stock600.
+  // Tiradas de salida del CAMPEÓN (Europeo de Moto2 y Stock 600). Son
+  // funciones para poder repetirlas: al ser la salida obligatoria no hay
+  // renovación, y las 2-3 tarjetas del mercado deben salir TODAS de estos
+  // porcentajes (antes las que sobraban se rellenaban con equipos de la
+  // misma categoría que acababas de ganar).
+  const rollMoto2EuroChampion = () => {
+    const r = Math.random();
+    if (r < 0.84) return { team: pickTeamByStrength("Moto2", 68, 75), championship: "Moto2" };
+    if (r < 0.90) return { team: pickTeamByStrength("Supersport", 69, 75), championship: "Supersport" };
+    if (r < 0.94) return { team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" };
+    return pickGuaranteedNationalOffer(55, 68);
+  };
+  const rollStock600Champion = () => {
+    const r = Math.random();
+    if (r < 0.86) return { team: pickTeamByStrength("Moto2Euro", 58, 64), championship: "Moto2Euro" };
+    if (r < 0.92) return pickGuaranteedNationalOffer(50, 64);
+    if (r < 0.97) return { team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" };
+    return { team: pickTeamByStrength("Supersport", 66, 72), championship: "Supersport" };
+  };
+
   let stock600ExitPick = null;
   if (state.championship === "Stock600" && lastSeason) {
     const pos = lastSeason.pos;
@@ -1108,10 +1163,7 @@ function generateMarketOffers() {
     if (pos === 1) {
       // Campeón: Europeo de Moto2 prácticamente siempre (salida obligatoria,
       // ver forcedExit); muy remoto Supersport, y poco una vía nacional.
-      if (r < 0.86) stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 58, 64), championship: "Moto2Euro" };
-      else if (r < 0.92) stock600ExitPick = natPick();
-      else if (r < 0.97) stock600ExitPick = spbPick();
-      else stock600ExitPick = { team: pickTeamByStrength("Supersport", 66, 72), championship: "Supersport" };
+      stock600ExitPick = rollStock600Champion();
     } else if (pos === 2 || pos === 3) {
       // Podio: Europeo de Moto2 con probabilidad alta; opciones reducidas
       // de nacional o SportBike; el resto, sigue (renovación disponible).
@@ -1189,10 +1241,7 @@ function generateMarketOffers() {
     const ssp = (lo, hi) => ({ team: pickTeamByStrength("Supersport", lo, hi), championship: "Supersport" });
     const spb = () => ({ team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" });
     if (pos === 1) {
-      if (r < 0.84) moto2EuroExitPick = m2(68, 75);
-      else if (r < 0.90) moto2EuroExitPick = ssp(69, 75);
-      else if (r < 0.94) moto2EuroExitPick = spb();
-      else moto2EuroExitPick = pickGuaranteedNationalOffer(55, 68);
+      moto2EuroExitPick = rollMoto2EuroChampion();
     } else if (pos === 2 || pos === 3) {
       const moto2Chance = pos === 2 ? 0.60 : 0.50;
       if (r < moto2Chance) moto2EuroExitPick = m2(68, 73);
@@ -1364,7 +1413,18 @@ function generateMarketOffers() {
   // retiro en vez de 2 + retiro. Se recortan las últimas (las de menor
   // prioridad, ya que las más importantes se han empujado primero).
   if (picks.length > extraPicksNeeded) picks.length = extraPicksNeeded;
-  while (picks.length < extraPicksNeeded && sameLevelCandidates.length) {
+  // Salida obligatoria (campeón de Moto2 Europeo / Stock 600): las tarjetas
+  // que faltan se rellenan repitiendo la tirada del campeón (sin repetir
+  // el mismo equipo), nunca con equipos de la categoría que acabas de ganar.
+  if (forcedExit) {
+    const roll = state.championship === "Moto2Euro" ? rollMoto2EuroChampion : rollStock600Champion;
+    let attempts = 0;
+    while (picks.length < extraPicksNeeded && attempts++ < 40) {
+      const extra = roll();
+      if (!picks.some((p) => p.team.name === extra.team.name && p.championship === extra.championship)) picks.push(extra);
+    }
+  }
+  while (!forcedExit && picks.length < extraPicksNeeded && sameLevelCandidates.length) {
     picks.push(sameLevelCandidates.shift());
   }
 
@@ -1818,13 +1878,12 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   state.seasonNumber += 1;
   state.justWonChampionship = isChampion ? { champ: seasonChamp, age: seasonAge } : null;
 
+  // Última temporada: se simula y se queda en el dashboard mostrando ese
+  // resultado; el salto al resumen de carrera lo decide el jugador con la
+  // tarjeta "Ver resumen de carrera" (ver renderMarket).
+  state.retirementPending = state.age > (NATIONAL_CHAMPS.includes(state.championship) ? MAX_AGE_NATIONAL : MAX_AGE);
   saveState();
-
-  if (state.age > (NATIONAL_CHAMPS.includes(state.championship) ? MAX_AGE_NATIONAL : MAX_AGE)) {
-    retireCareer();
-  } else {
-    renderDashboard(true);
-  }
+  renderDashboard(true);
 }
 
 // ============================================================
@@ -2231,6 +2290,7 @@ function resetGame() {
   $(`#number-color-group .number-color-swatch[data-color="#F4C400"]`).classList.add("selected");
 
   $("#input-search-country").value = "";
+  $("#random-country-result").innerHTML = "";
   buildCountryGrid();
   $("#btn-to-debut").disabled = true;
 

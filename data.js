@@ -26,7 +26,20 @@ const COUNTRIES = [
   ["Kazajistán","KZ"],["Israel","IL"],["Jordania","JO"],["Líbano","LB"],
   ["Kuwait","KW"],["Baréin","BH"],["Omán","OM"],["Nigeria","NG"],
   ["Kenia","KE"],["Argelia","DZ"],["Túnez","TN"],["Singapur","SG"],
-  ["Taiwán","TW"],["Panamá","PA"]
+  ["Taiwán","TW"],["Panamá","PA"],
+  // AJUSTE (nuevo): más países (incluidas las cuatro naciones del Reino
+  // Unido, muy habituales en el paddock británico).
+  ["Inglaterra","GB-ENG"],["Escocia","GB-SCT"],["Gales","GB-WLS"],["Irlanda del Norte","GB-NIR"],
+  ["Mónaco","MC"],["San Marino","SM"],["Liechtenstein","LI"],["Kosovo","XK"],
+  ["Bolivia","BO"],["Costa Rica","CR"],["Guatemala","GT"],["Honduras","HN"],
+  ["El Salvador","SV"],["República Dominicana","DO"],["Cuba","CU"],["Puerto Rico","PR"],
+  ["Jamaica","JM"],["Trinidad y Tobago","TT"],["Ghana","GH"],["Senegal","SN"],
+  ["Costa de Marfil","CI"],["Camerún","CM"],["Etiopía","ET"],["Tanzania","TZ"],
+  ["Uganda","UG"],["Mozambique","MZ"],["Angola","AO"],["Namibia","NA"],
+  ["Botsuana","BW"],["Mauricio","MU"],["Irán","IR"],["Irak","IQ"],
+  ["Sri Lanka","LK"],["Bangladés","BD"],["Nepal","NP"],["Camboya","KH"],
+  ["Laos","LA"],["Mongolia","MN"],["Uzbekistán","UZ"],["Hong Kong","HK"],
+  ["Macao","MO"],["Fiyi","FJ"],["Papúa Nueva Guinea","PG"]
 ].map(([name, code]) => ({ name, code }));
 
 function flagImg(code, className = "flag-img") {

@@ -919,3 +919,11 @@ body{
   grid-template-columns:1fr 1fr;
   gap:10px;
 }
+
+/* ---------- País aleatorio ---------- */
+.btn-random-country{ width:100%; margin:10px 0 6px; padding:13px 16px; font-size:15px; }
+.random-country-result{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  min-height:0; font-size:15px; font-weight:700; margin-bottom:8px;
+}
+.random-country-result:not(:empty){ min-height:34px; }
