@@ -100,38 +100,73 @@ body{
 .bike-wrap{
   display:flex;
   justify-content:center;
-  padding:10px 0 4px;
+  padding:6px 0 8px;
 }
 .number-plate{
-  width:190px;
-  height:190px;
-  border-radius:28px;
-  background:linear-gradient(160deg, var(--card), var(--card-2));
-  border:1px solid var(--border);
-  box-shadow:0 0 0 1px rgba(255,255,255,0.04) inset;
+  --plate-accent:#F4C400;
+  position:relative;
+  width:100%;
+  max-width:330px;
+  height:220px;
+  border-radius:30px;
+  overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--plate-accent) 24%, transparent), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.025) 0 6px, transparent 6px 12px),
+    linear-gradient(160deg, #1f1f22, #0e0e0f);
+  border:1px solid color-mix(in srgb, var(--plate-accent) 50%, var(--border));
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.55),
+    0 0 44px color-mix(in srgb, var(--plate-accent) 20%, transparent),
+    inset 0 0 0 1px rgba(255,255,255,0.05);
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:8px;
+  gap:10px;
+  transition:border-color 250ms ease, box-shadow 250ms ease;
 }
+.plate-stripe{
+  position:absolute;
+  left:0; right:0; top:0;
+  height:7px;
+  background:linear-gradient(90deg, var(--plate-accent), transparent 85%);
+  transition:background 250ms ease;
+}
+.plate-tag{
+  position:absolute;
+  top:16px; left:20px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:3px;
+  color:var(--gray);
+}
+.number-plate-number{
+  font-size:118px;
+  font-weight:900;
+  line-height:0.9;
+  color:var(--yellow);
+  letter-spacing:-2px;
+  text-shadow:0 8px 30px color-mix(in srgb, var(--plate-accent) 45%, transparent);
+  transition:color 250ms ease;
+}
+.number-plate-number.pop{ animation:platePop 260ms ease; }
+@keyframes platePop{ 0%{ transform:scale(0.92); } 60%{ transform:scale(1.05); } 100%{ transform:scale(1); } }
 .number-plate-surname{
   font-size:14px;
   font-weight:800;
-  letter-spacing:1.5px;
+  letter-spacing:4px;
   color:var(--white);
   text-transform:uppercase;
-  max-width:90%;
+  max-width:86%;
   text-align:center;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-}
-.number-plate-number{
-  font-size:58px;
-  font-weight:900;
-  color:var(--yellow);
-  line-height:1;
+  padding:7px 18px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.08);
 }
 
 /* ---------- Fields ---------- */
@@ -927,3 +962,50 @@ body{
   min-height:0; font-size:15px; font-weight:700; margin-bottom:8px;
 }
 .random-country-result:not(:empty){ min-height:34px; }
+
+/* ---------- Identidad: selector de número y estilo ---------- */
+.number-stepper{ display:flex; gap:10px; align-items:stretch; }
+.number-stepper input{
+  flex:1;
+  min-width:0;
+  text-align:center;
+  font-size:30px;
+  font-weight:900;
+  padding:10px 8px;
+  text-transform:none;
+  -moz-appearance:textfield;
+}
+.number-stepper input::-webkit-outer-spin-button,
+.number-stepper input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.step-btn{
+  width:56px;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--white);
+  font-size:26px;
+  font-weight:700;
+  cursor:pointer;
+  transition:transform 150ms ease, border-color 200ms ease, background 200ms ease;
+}
+.step-btn:active{ transform:scale(0.92); background:var(--card-2); }
+.step-dice{ font-size:22px; border-color:var(--yellow); background:rgba(244,196,0,0.08); }
+
+.number-font-btn{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  padding:12px 4px 10px;
+}
+.nf-sample{ font-size:26px; line-height:1; font-weight:700; }
+.nf-name{ font-size:11px; font-weight:700; letter-spacing:0.5px; color:var(--gray); font-family:'Inter', sans-serif; text-transform:uppercase; }
+.number-font-btn.selected .nf-name{ color:var(--white); }
+
+.number-color-group{ margin-top:0; gap:12px; justify-content:space-between; }
+.number-color-swatch{ width:42px; height:42px; }
+.number-color-swatch.selected{
+  border-color:var(--white);
+  transform:scale(1.1);
+  box-shadow:0 0 0 3px rgba(255,255,255,0.15);
+}

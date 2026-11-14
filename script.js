@@ -58,7 +58,7 @@ const JUNIOR_CHAMPS = ["MotoJunior", "RedBullRookies", "YamahaR3Cup"];
 // Ruido "casi normal" (suma de 3 uniformes) para resultados de carrera.
 function noise(sd) { return sd * ((Math.random() + Math.random() + Math.random() - 1.5) / 1.5); }
 
-let draft = { apellido: "", numero: null, mano: "Izquierda", nacionalidad: null, numeroFont: "inter", numeroColor: "#F4C400" };
+let draft = { apellido: "", numero: null, nacionalidad: null, numeroFont: "inter", numeroColor: "#F4C400" };
 
 // Fuentes disponibles para el dorsal (clave → familia CSS real).
 const NUMBER_FONTS = {
@@ -162,7 +162,23 @@ $("#input-numero").addEventListener("input", (e) => {
   let v = e.target.value.replace(/\D/g, "");
   if (v) v = clamp(parseInt(v), 1, 99);
   $("#bike-number").textContent = v ? String(v).padStart(2, "0") : "00";
+  const n = $("#bike-number"); n.classList.remove("pop"); void n.offsetWidth; n.classList.add("pop");
 });
+
+// Selector de número: -, +, y aleatorio (1-99)
+function setNumeroInput(v) {
+  $("#input-numero").value = clamp(v, 1, 99);
+  $("#input-numero").dispatchEvent(new Event("input"));
+}
+$("#num-minus").addEventListener("click", () => {
+  const cur = parseInt($("#input-numero").value) || 1;
+  setNumeroInput(cur <= 1 ? 99 : cur - 1);
+});
+$("#num-plus").addEventListener("click", () => {
+  const cur = parseInt($("#input-numero").value) || 0;
+  setNumeroInput(cur >= 99 ? 1 : cur + 1);
+});
+$("#num-random").addEventListener("click", () => setNumeroInput(randInt(1, 99)));
 
 $("#number-font-group").addEventListener("click", (e) => {
   const btn = e.target.closest(".number-font-btn");
@@ -180,14 +196,7 @@ $("#number-color-group").addEventListener("click", (e) => {
   btn.classList.add("selected");
   draft.numeroColor = btn.dataset.color;
   $("#bike-number").style.color = draft.numeroColor;
-});
-
-$("#mano-toggle").addEventListener("click", (e) => {
-  const btn = e.target.closest(".toggle-btn");
-  if (!btn) return;
-  $$("#mano-toggle .toggle-btn").forEach((b) => b.classList.remove("selected"));
-  btn.classList.add("selected");
-  draft.mano = btn.dataset.value;
+  $("#number-plate").style.setProperty("--plate-accent", draft.numeroColor);
 });
 
 $("#btn-to-nacionalidad").addEventListener("click", () => {
@@ -427,7 +436,6 @@ function startCareer(team, champ = "MotoJunior") {
     rider: {
       apellido: draft.apellido,
       numero: draft.numero,
-      mano: draft.mano,
       nacionalidad: draft.nacionalidad,
       numeroFont: draft.numeroFont,
       numeroColor: draft.numeroColor,
@@ -2522,7 +2530,7 @@ $("#btn-download-card").addEventListener("click", () => {
 function resetGame() {
   localStorage.removeItem(STORAGE_KEY);
   state = null;
-  draft = { apellido: "", numero: null, mano: "Izquierda", nacionalidad: null, numeroFont: "inter", numeroColor: "#F4C400" };
+  draft = { apellido: "", numero: null, nacionalidad: null, numeroFont: "inter", numeroColor: "#F4C400" };
 
   $("#input-apellido").value = "";
   $("#input-numero").value = "";
@@ -2530,9 +2538,11 @@ function resetGame() {
   $("#bike-number").textContent = "00";
   $("#bike-number").style.fontFamily = NUMBER_FONTS.inter;
   $("#bike-number").style.color = "#F4C400";
+  $("#number-plate").style.setProperty("--plate-accent", "#F4C400");
+  $$("#number-font-group .number-font-btn").forEach((b) => b.classList.toggle("selected", b.dataset.font === "inter"));
+  $$("#number-color-group .number-color-swatch").forEach((b) => b.classList.toggle("selected", b.dataset.color === "#F4C400"));
+  $("#input-numero").value = "";
 
-  $$("#mano-toggle .toggle-btn").forEach((b) => b.classList.remove("selected"));
-  $(`#mano-toggle .toggle-btn[data-value="Izquierda"]`).classList.add("selected");
 
   $$("#number-font-group .number-font-btn").forEach((b) => b.classList.remove("selected"));
   $(`#number-font-group .number-font-btn[data-font="inter"]`).classList.add("selected");

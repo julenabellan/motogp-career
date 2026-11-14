@@ -18,9 +18,11 @@
     <h1 class="screen-title">Identidad</h1>
 
     <div class="bike-wrap">
-      <div class="number-plate">
-        <span id="bike-surname" class="number-plate-surname">APELLIDO</span>
+      <div class="number-plate" id="number-plate">
+        <div class="plate-stripe"></div>
+        <span class="plate-tag">DORSAL</span>
         <span id="bike-number" class="number-plate-number">00</span>
+        <span id="bike-surname" class="number-plate-surname">APELLIDO</span>
       </div>
     </div>
 
@@ -29,19 +31,28 @@
       <input id="input-apellido" type="text" maxlength="16" placeholder="APELLIDO" autocomplete="off">
     </div>
 
-    <div class="field field-small">
+    <div class="field">
       <label>Número</label>
-      <input id="input-numero" type="number" min="1" max="99" placeholder="00">
+      <div class="number-stepper">
+        <button type="button" class="step-btn" id="num-minus" aria-label="Número anterior">−</button>
+        <input id="input-numero" type="number" inputmode="numeric" min="1" max="99" placeholder="00">
+        <button type="button" class="step-btn" id="num-plus" aria-label="Número siguiente">+</button>
+        <button type="button" class="step-btn step-dice" id="num-random" aria-label="Número aleatorio">🎲</button>
+      </div>
     </div>
 
     <div class="field">
-      <label>Estilo del dorsal</label>
+      <label>Tipografía</label>
       <div class="number-style-group" id="number-font-group">
-        <button class="number-font-btn selected" data-font="inter" style="font-family:'Inter', sans-serif;">88</button>
-        <button class="number-font-btn" data-font="oswald" style="font-family:'Oswald', sans-serif;">88</button>
-        <button class="number-font-btn" data-font="orbitron" style="font-family:'Orbitron', sans-serif;">88</button>
-        <button class="number-font-btn" data-font="bebas" style="font-family:'Bebas Neue', sans-serif;">88</button>
+        <button class="number-font-btn selected" data-font="inter"><span class="nf-sample" style="font-family:'Inter', sans-serif;">88</span><span class="nf-name">Clásica</span></button>
+        <button class="number-font-btn" data-font="oswald"><span class="nf-sample" style="font-family:'Oswald', sans-serif;">88</span><span class="nf-name">Racing</span></button>
+        <button class="number-font-btn" data-font="orbitron"><span class="nf-sample" style="font-family:'Orbitron', sans-serif;">88</span><span class="nf-name">Tech</span></button>
+        <button class="number-font-btn" data-font="bebas"><span class="nf-sample" style="font-family:'Bebas Neue', sans-serif;">88</span><span class="nf-name">Bold</span></button>
       </div>
+    </div>
+
+    <div class="field">
+      <label>Color</label>
       <div class="number-color-group" id="number-color-group">
         <button class="number-color-swatch selected" data-color="#F4C400" style="background:#F4C400;" title="Amarillo"></button>
         <button class="number-color-swatch" data-color="#FFFFFF" style="background:#FFFFFF;" title="Blanco"></button>
@@ -49,14 +60,6 @@
         <button class="number-color-swatch" data-color="#3B82F6" style="background:#3B82F6;" title="Azul"></button>
         <button class="number-color-swatch" data-color="#1DB954" style="background:#1DB954;" title="Verde"></button>
         <button class="number-color-swatch" data-color="#E67E22" style="background:#E67E22;" title="Naranja"></button>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Mano dominante</label>
-      <div class="toggle-group" id="mano-toggle">
-        <button class="toggle-btn selected" data-value="Izquierda">Izquierda</button>
-        <button class="toggle-btn" data-value="Derecha">Derecha</button>
       </div>
     </div>
 
