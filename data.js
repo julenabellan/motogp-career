@@ -64,13 +64,24 @@ const TEAMS = {
   // influir en el resultado (ver CATEGORY_WEIGHTS en script.js).
   // ----------------------------------------------------------------
   MotoJunior: [
-    { name: "Estrella Galicia 0,0 Monlau",              strength: 46, color: "#1DB954", logo: "EstrellaGalicia" },
-    { name: "Aspar Junior Team",                  strength: 45, color: "#0199b1", logo: "ASPAR"           },
-    { name: "KTM Junior Team",                    strength: 44, color: "#ea5d24", logo: "Ktm"             },
-    { name: "Honda Asia Junior Team",            strength: 43, color: "#cc1517", logo: "HondaAsia"      },
-    { name: "MTA Junior Team",                     strength: 42, color: "#ca2c23", logo: "MTA"            },
-    { name: "Team Laglisse",                   strength: 42, color: "#cc1517", logo: "Laglisse"            },
-    { name: "Momoven Racing Junior Team",                strength: 44, color: "#ff6500", logo: "Momoven"        },
+    // Lista oficial del Mundial Junior. Logos/colores reutilizados cuando el
+    // equipo ya existía en el juego; los marcados NUEVO llevan color
+    // aleatorio y un PNG por poner en /logos (cámbialos cuando quieras).
+    { name: "CFMOTO Aspar Junior Team",     strength: 45, color: "#0199b1", logo: "ASPAR"          },
+    { name: "AC Racing Team",               strength: 44, color: "#edfb0a", logo: "ACRacing"       }, // NUEVO
+    { name: "Honda Asia Talent Team",       strength: 43, color: "#cc1517", logo: "HondaAsia"      },
+    { name: "Team Monlau Motul",            strength: 46, color: "#1DB954", logo: "EstrellaGalicia" },
+    { name: "MLAV British Talent Team",          strength: 43, color: "#0b1f43", logo: "MLAV"           },
+    { name: "Momoven Racing",               strength: 44, color: "#ff6500", logo: "Momoven"        },
+    { name: "MTA Junior Team",              strength: 42, color: "#ca2c23", logo: "MTA"            },
+    { name: "JEG Take Off GP",              strength: 41, color: "#010e27", logo: "JEG"     }, // NUEVO
+    { name: "CIP Green Power Junior Team",  strength: 43, color: "#12a236", logo: "CIP"            },
+    { name: "AGR Team",                     strength: 42, color: "#0b1f43", logo: "AGR"            },
+    { name: "Team Laglisse",                strength: 42, color: "#cc1517", logo: "Laglisse"       },
+    { name: "Team Echovit Pasini Racing",   strength: 44, color: "#022397", logo: "PASINI"  }, // NUEVO
+    { name: "Larresport",                   strength: 41, color: "#CC0000", logo: "Larre"     }, // NUEVO
+    { name: "Snipers IGAX Team",            strength: 42, color: "#f9eb1d", logo: "Igax"        },
+    { name: "Frando Racing Team",           strength: 41, color: "#0048ae", logo: "Frando"   }, // NUEVO
   ],
   RedBullRookies: [
     { name: "Red Bull Rookies Cup",               strength: 42, color: "#0b1f6e", logo: "RedBullRookies" },
@@ -129,15 +140,28 @@ const TEAMS = {
   // se puede ir después) se definirá más adelante; por ahora solo están
   // los equipos, colores y logos.
   Moto2Euro: [
-    { name: "Top Surface Aspar Team",                strength: 64, color: "#0199b1", logo: "TopSurface"     },
-    { name: "Team Ciatti-Boscoscuro",                strength: 62, color: "#cef300", logo: "Ciatti"         },
-    { name: "AGR Team",                              strength: 60, color: "#0b1f43", logo: "AGR"            },
-    { name: "Team Stylobike Yamaha Philippines",     strength: 58, color: "#21409a", logo: "StyloBike"      },
-    { name: "Cardoso Racing",                        strength: 59, color: "#21409a", logo: "Cardoso"        },
-    { name: "GV Racing",                             strength: 55, color: "#29304c", logo: "GV"             },
-    { name: "MMR",                                   strength: 61, color: "#5981bc", logo: "MMR"            },
-    { name: "Fau55 Tey Racing",                      strength: 60, color: "#cef300", logo: "Fau55"          },
-    { name: "Momoven Racing Junior Team",                strength: 44, color: "#ff6500", logo: "Momoven"        },
+    // Lista oficial del Europeo de Moto2 (de mejor a peor, con Aspar, Klint,
+    // Ciatti y AGR como los más fuertes). Logos/colores reutilizados cuando
+    // el equipo ya existía; los marcados NUEVO llevan color aleatorio y un
+    // PNG por poner en /logos.
+    { name: "Top Surface Aspar Team",          strength: 64, color: "#0199b1", logo: "TopSurface"     },
+    { name: "Team Ciatti - Boscoscuro",        strength: 63, color: "#cef300", logo: "Ciatti"         },
+    { name: "Klint Racing Team Face",          strength: 63, color: "#79ebd1", logo: "Klint"          },
+    { name: "AGR Team",                        strength: 62, color: "#0b1f43", logo: "AGR"            },
+    { name: "Momoven Racing",                  strength: 61, color: "#ff6500", logo: "Momoven"        },
+    { name: "Eagle-1",                         strength: 61, color: "#0093ce", logo: "Eagle1"         }, // NUEVO
+    { name: "MMR",                             strength: 60, color: "#5981bc", logo: "MMR"            },
+    { name: "Cardoso Racing",                  strength: 60, color: "#21409a", logo: "Cardoso"        },
+    { name: "FAU55TEYRACING",                  strength: 59, color: "#cef300", logo: "Fau55"          },
+    { name: "Team Estrella Galicia 0,0",       strength: 59, color: "#1DB954", logo: "EstrellaGalicia"},
+    { name: "Team Stylobike Yamaha Philippines", strength: 58, color: "#21409a", logo: "StyloBike"    },
+    { name: "Revesz Racing Team",              strength: 58, color: "#CC0000", logo: "Revesz"   }, // NUEVO
+    { name: "AC Racing Team",                  strength: 57, color: "#edfb0a", logo: "ACRacing"       }, // NUEVO (mismo que en Junior)
+    { name: "SF Racing",                       strength: 57, color: "#CC0000", logo: "SF"       }, // NUEVO
+    { name: "Promoracing Factory Team",        strength: 56, color: "#232323", logo: "Promo"    }, // NUEVO
+    { name: "MDR Competicion",                 strength: 55, color: "#21409a", logo: "MDR"            },
+    { name: "JDO Racing Team",                 strength: 55, color: "#59c84a", logo: "JDO"            },
+    { name: "GV EBC Racing",                   strength: 55, color: "#29304c", logo: "GV"             },
   ],
   Moto3: [
     { name: "Leopard Racing",                        strength: 58, color: "#82cad1", logo: "Leopard"        },
@@ -182,6 +206,8 @@ const TEAMS = {
     { name: "BMW EasyRace Team",   strength: 60, color: "#171536", logo: "EasyRace"   },
     { name: "Team Honda Laglisse",    strength: 63, color: "#cc1517", logo: "Laglisse"    },
     { name: "Kawasaki JDO Racing Team", strength: 61, color: "#59c84a", logo: "JDO" },
+    { name: "New2 Project",         strength: 59, color: "#171536", logo: "New2"       }, // NUEVO (1 punto menos que BMW EasyRace)
+    { name: "ADN-VG Racing",        strength: 58, color: "#ff1744", logo: "ADN"        }, // NUEVO (el peor del ESBK)
   ],
   BSB: [
     { name: "McAMS Yamaha",   strength: 66, color: "#21409a", logo: "McAms"   },
@@ -221,10 +247,22 @@ const TEAMS = {
   // en script.js), aunque sí hay 4 escuadras distintas entre las que
   // elegir, a diferencia de Red Bull Rookies o Yamaha R3 Cup.
   Stock600: [
-    { name: "MDR Competition",           strength: 52, color: "#21409a", logo: "MDR"      },
-    { name: "Team Honda Laglisse",          strength: 54, color: "#cc1517", logo: "Laglisse"      },
-    { name: "GV Racing",       strength: 49, color: "#29304c", logo: "GV"       },
-    { name: "Top Surface Aspar Team", strength: 50, color: "#0199b1", logo: "TopSurface"  },
+    // Lista oficial del Stock European Championship (ordenada por la mejor
+    // posición de su mejor piloto en 2026). Cuando un equipo coincide con
+    // uno del Europeo de Moto2 o del Mundial Junior, se usa ese nombre,
+    // color y logo. Los marcados NUEVO llevan color aleatorio y un PNG por
+    // poner en /logos.
+    { name: "SF Racing",                       strength: 54, color: "#CC0000", logo: "SF"       }, // de Moto2 Europeo
+    { name: "Team Laglisse",                   strength: 54, color: "#cc1517", logo: "Laglisse"       }, // de Junior
+    { name: "Futurotel Face Racing",           strength: 53, color: "#71329a", logo: "Face"  }, // NUEVO
+    { name: "GV EBC Racing",                   strength: 52, color: "#29304c", logo: "GV"             }, // de Moto2 Europeo
+    { name: "Top Surface Aspar Team",          strength: 52, color: "#0199b1", logo: "TopSurface"     },
+    { name: "Zivimotor",                       strength: 51, color: "#e4ff1a", logo: "Zivi"      }, // NUEVO
+    { name: "MDR Competicion",                 strength: 50, color: "#21409a", logo: "MDR"            }, // de Moto2 Europeo
+    { name: "IUM Motorsports",                 strength: 49, color: "#fd018e", logo: "IUM" }, // NUEVO
+    { name: "Promoracing Factory Team",        strength: 49, color: "#232323", logo: "Promo"    }, // de Moto2 Europeo
+    { name: "Junior Team Da Corsa",            strength: 48, color: "#0093ce", logo: "DaCorsa"        }, // NUEVO
+    { name: "CIP Green Power Junior Team",     strength: 47, color: "#12a236", logo: "CIP"            }, // de Junior
   ],
 };
 

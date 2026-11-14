@@ -759,8 +759,9 @@ function generateMarketOffers() {
   // para que "quedarte" no sea una opción en absoluto (antes la tarjeta de
   // renovación aparecía igualmente, sin depender de las vías de salida de
   // arriba).
-  const forcedExit = lastSeason && lastSeason.pos <= 2 &&
-    (state.championship === "Moto2Euro" || state.championship === "Stock600");
+  const forcedExit = lastSeason &&
+    ((state.championship === "Moto2Euro" && lastSeason.pos === 1) ||
+     (state.championship === "Stock600" && lastSeason.pos === 1));
   if (!nonRenewal && !forcedExit) {
     offers.push({ team: currentTeamData, championship: state.championship, isCurrent: true });
   }
@@ -1100,21 +1101,38 @@ function generateMarketOffers() {
   //    en Stock600.
   let stock600ExitPick = null;
   if (state.championship === "Stock600" && lastSeason) {
-    if (lastSeason.pos === 1) {
-      stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 58, 64), championship: "Moto2Euro" };
-    } else if (lastSeason.pos === 2) { // AJUSTE: garantizado (antes 68%)
-      stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 56, 62), championship: "Moto2Euro" };
-    } else if (lastSeason.pos === 3 && Math.random() < 0.72) { // AJUSTE: 0.45 → 0.72
-      stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 55, 61), championship: "Moto2Euro" };
-    } else if (lastSeason.pos >= 4 && lastSeason.pos <= 8 && Math.random() < 0.22) {
-      stock600ExitPick = Math.random() < 0.7
-        ? { team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" }
-        : { team: pickTeamByStrength("Moto2Euro", 52, 58), championship: "Moto2Euro" };
+    const pos = lastSeason.pos;
+    const r = Math.random();
+    const natPick = () => pickGuaranteedNationalOffer(50, 64);
+    const spbPick = () => ({ team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" });
+    if (pos === 1) {
+      // Campeón: Europeo de Moto2 prácticamente siempre (salida obligatoria,
+      // ver forcedExit); muy remoto Supersport, y poco una vía nacional.
+      if (r < 0.86) stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 58, 64), championship: "Moto2Euro" };
+      else if (r < 0.92) stock600ExitPick = natPick();
+      else if (r < 0.97) stock600ExitPick = spbPick();
+      else stock600ExitPick = { team: pickTeamByStrength("Supersport", 66, 72), championship: "Supersport" };
+    } else if (pos === 2 || pos === 3) {
+      // Podio: Europeo de Moto2 con probabilidad alta; opciones reducidas
+      // de nacional o SportBike; el resto, sigue (renovación disponible).
+      if (r < 0.70) stock600ExitPick = { team: pickTeamByStrength("Moto2Euro", 55, 62), championship: "Moto2Euro" };
+      else if (r < 0.83) stock600ExitPick = natPick();
+      else if (r < 0.95) stock600ExitPick = spbPick();
+    } else if (pos === 4 || pos === 5) {
+      // 4º-5º: lo normal es repetir en Stock600 si eres joven; con 26+ años
+      // y 3+ temporadas en el campeonato, la renovación se complica (ver
+      // pendingNonRenewal en simulateSeason) y lo habitual es salir hacia
+      // un nacional o SportBike (presupuesto/edad).
+      const veteran = state.age >= 26 && (state.seasonsInSeries || 1) >= 3;
+      if (r < (veteran ? 0.70 : 0.15)) stock600ExitPick = Math.random() < 0.6 ? natPick() : spbPick();
+    } else if (pos >= 6 && pos <= 8 && r < 0.22) {
+      stock600ExitPick = Math.random() < 0.7 ? spbPick() : { team: pickTeamByStrength("Moto2Euro", 52, 58), championship: "Moto2Euro" };
     }
   }
   let stock600VeteranPick = null;
   let stock600VeteranSspPick = null;
   if (state.championship === "Stock600" && state.age >= 25 && !stock600ExitPick &&
+      lastSeason && lastSeason.pos >= 6 &&
       Math.random() < 0.60) { // AJUSTE: 0.55 → 0.60
     if (Math.random() < 0.15) {
       stock600VeteranSspPick = { team: pickTeamByStrength("Supersport", 66, 72), championship: "Supersport" };
@@ -1153,47 +1171,42 @@ function generateMarketOffers() {
   }
 
   // Salida del Europeo de Moto2, según cómo termine la temporada:
-  //  - Campeón: AJUSTE — 80% Moto2, 15% Supersport directo, 5% WorldSBK, y
-  //    0% se queda (quitada del todo: ganar el Europeo de Moto2 significa
-  //    salir sí o sí).
-  //  - 2º: garantizado salir (0% de quedarse): 45% Moto2, 35% Supersport,
-  //    20% nacional.
-  //  - 3º: muchas más opciones de salir — 22% Moto2, 50% Supersport, 25%
-  //    nacional, solo 3% se queda.
-  //  - 4º o peor: nacional o Supersport, con más peso cuanto mayor es el
-  //    piloto (26+); si no, lo normal es quedarse otra temporada. (Sin
-  //    cambios.)
+  //  - Campeón: salida OBLIGATORIA (ver forcedExit). 84% Mundial de Moto2,
+  //    6% Supersport, 4% SportBike, 6% campeonato nacional.
+  //  - 2º-3º: Mundial de Moto2 con probabilidad alta (60% el 2º, 50% el
+  //    3º); Supersport 12%, SportBike 10%, nacional 13%; el resto repite en
+  //    el Europeo para ir a por el título (renovación disponible).
+  //  - 4º-5º: lo normal es repetir (más aún siendo joven); vía habitual
+  //    para relanzarse: Supersport, SportBike o nacional. A partir de 26
+  //    años (salida por edad) aumentan mucho las salidas.
+  //  - 6º o peor: igual que antes (nacional o Supersport, más peso en 26+).
   let moto2EuroExitPick = null;
   if (state.championship === "Moto2Euro" && lastSeason) {
     const pos = lastSeason.pos;
     const olderRider = state.age >= 26;
+    const r = Math.random();
+    const m2 = (lo, hi) => ({ team: pickTeamByStrength("Moto2", lo, hi), championship: "Moto2" });
+    const ssp = (lo, hi) => ({ team: pickTeamByStrength("Supersport", lo, hi), championship: "Supersport" });
+    const spb = () => ({ team: pickTeamByStrength("SportBike", 50, 58), championship: "SportBike" });
     if (pos === 1) {
-      const r = Math.random();
-      if (r < 0.80) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 75), championship: "Moto2" };
-      else if (r < 0.95) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 69, 75), championship: "Supersport" };
-      else moto2EuroExitPick = { team: pickTeamByStrength("WorldSBK", 69, 76), championship: "WorldSBK" };
-      // 0% se queda: ganar el Europeo de Moto2 es sinónimo de irte.
-    } else if (pos === 2) {
-      const r = Math.random();
-      if (r < 0.45) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 73), championship: "Moto2" };
-      else if (r < 0.80) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 68, 74), championship: "Supersport" };
+      if (r < 0.84) moto2EuroExitPick = m2(68, 75);
+      else if (r < 0.90) moto2EuroExitPick = ssp(69, 75);
+      else if (r < 0.94) moto2EuroExitPick = spb();
       else moto2EuroExitPick = pickGuaranteedNationalOffer(55, 68);
-      // 0% se queda: garantizado salir.
-    } else if (pos === 3) {
-      const r = Math.random();
-      if (r < 0.22) moto2EuroExitPick = { team: pickTeamByStrength("Moto2", 68, 71), championship: "Moto2" };
-      else if (r < 0.72) moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 67, 73), championship: "Supersport" };
-      else if (r < 0.97) moto2EuroExitPick = pickGuaranteedNationalOffer(53, 66);
-      // el 3% restante: se queda.
+    } else if (pos === 2 || pos === 3) {
+      const moto2Chance = pos === 2 ? 0.60 : 0.50;
+      if (r < moto2Chance) moto2EuroExitPick = m2(68, 73);
+      else if (r < moto2Chance + 0.12) moto2EuroExitPick = ssp(67, 74);
+      else if (r < moto2Chance + 0.22) moto2EuroExitPick = spb();
+      else if (r < moto2Chance + 0.35) moto2EuroExitPick = pickGuaranteedNationalOffer(53, 68);
+    } else if (pos === 4 || pos === 5) {
+      const sspW = olderRider ? 0.17 : 0.10, spbW = olderRider ? 0.13 : 0.08, natW = olderRider ? 0.25 : 0.12;
+      if (r < sspW) moto2EuroExitPick = ssp(65, 72);
+      else if (r < sspW + spbW) moto2EuroExitPick = spb();
+      else if (r < sspW + spbW + natW) moto2EuroExitPick = pickGuaranteedNationalOffer(50, 65);
     } else {
-      const r = Math.random();
-      if (r < (olderRider ? 0.40 : 0.20)) {
-        moto2EuroExitPick = pickGuaranteedNationalOffer(50, 65);
-      } else if (r < (olderRider ? 0.55 : 0.35)) {
-        moto2EuroExitPick = { team: pickTeamByStrength("Supersport", 65, 71), championship: "Supersport" };
-      }
-      // El resto: se queda en el Europeo de Moto2 (más habitual cuanto más
-      // joven es el piloto), sin vía especial esta temporada.
+      if (r < (olderRider ? 0.40 : 0.20)) moto2EuroExitPick = pickGuaranteedNationalOffer(50, 65);
+      else if (r < (olderRider ? 0.55 : 0.35)) moto2EuroExitPick = ssp(65, 71);
     }
   }
 
@@ -1588,6 +1601,16 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
     state.seasonsInChamp = (state.seasonsInChamp || 0) + 1;
   }
 
+  // FIX SESGO 2º: "categoryChanged" también es true al cambiar solo de
+  // EQUIPO dentro del mismo campeonato, y eso reiniciaba la "temporada de
+  // novato" (con 85% de recorte del título a 2º/3º) en cada cambio de
+  // equipo. Para el recorte de título, lo que cuenta es el CAMPEONATO.
+  // En la primera temporada de la carrera previousChampionship es null.
+  const champChanged = previousChampionship !== state.championship;
+  state.seasonsInSeries = champChanged
+    ? 1
+    : (state.seasonsInSeries ? state.seasonsInSeries + 1 : (state.seasonsInChamp || 1));
+
   // AJUSTE (7ª pasada): el salto de la fase de formación (JuniorGP/Red Bull
   // Rookies/R3 Cup) a Moto3 o SportBike se reparte en dos partes en vez de
   // llegar todo de golpe al final de la primera temporada — así la primera
@@ -1611,7 +1634,7 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
 
   const w = CATEGORY_WEIGHTS[state.championship] || CATEGORY_WEIGHTS.Moto3;
 
-  const seasonsInChampNow = state.seasonsInChamp || 1;
+  const seasonsInChampNow = state.seasonsInSeries || 1;
   const isRookieSeason = seasonsInChampNow === 1;
   const isSophomoreSeason = seasonsInChampNow === 2;
 
@@ -1731,7 +1754,10 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
       top3DampChance = 0.30;
     }
   }
-  if (champPosition === 1 && Math.random() < champDampChance) {
+  // FIX SESGO 2º: una temporada dominante (60%+ de victorias, p. ej. 12 o
+  // más de 20) nunca se recorta: acabar 2º con 15 victorias no tiene sentido.
+  const dominantSeason = cg >= Math.ceil(RACES_PER_SEASON * 0.6);
+  if (champPosition === 1 && !dominantSeason && Math.random() < champDampChance) {
     champPosition = randInt(2, 3);
   }
 
@@ -1776,6 +1802,10 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   const thisSeasonGood = pod >= 3 || cg >= 1 || champPosition <= 8;
   const thisSeasonBad = !thisSeasonGood && champPosition >= 15;
   state.pendingNonRenewal = thisSeasonBad && Math.random() < 0.15;
+  if (state.championship === "Stock600" && champPosition >= 4 && champPosition <= 5 &&
+      state.age >= 26 && (state.seasonsInSeries || 1) >= 3) {
+    state.pendingNonRenewal = Math.random() < 0.6; // renovar se vuelve muy difícil
+  }
   state.nonRenewalsInChamp = categoryChanged
     ? (state.pendingNonRenewal ? 1 : 0)
     : (state.nonRenewalsInChamp || 0) + (state.pendingNonRenewal ? 1 : 0);
