@@ -1547,6 +1547,8 @@ function generateMarketOffers() {
   if (state.age <= 21) stayProb += 0.20;
   if (!promoGood) lateralP += 0.15;
   if (badStreak) { lateralP = 1; stayProb = 0; }
+  // Moto2 con 27-28+ años: el mercado empuja a salir (Supersport, WorldSBK, algún nacional).
+  if (state.championship === "Moto2" && state.age >= 27) { lateralP += 0.25; stayProb *= 0.7; }
   // Júnior: una mala temporada a los 16-17 casi nunca significa irse (se
   // sigue un año más); a los 18-19 ya es lo habitual.
   const juniorExitAge = { 16: 0.10, 17: 0.40, 18: 0.85 }[state.age] ?? (state.age < 16 ? 0.05 : 1);
@@ -1561,7 +1563,10 @@ function generateMarketOffers() {
     const add = (w, champ, lo, hi) => opts.push({ w, champ, lo, hi });
     if (ch === "MotoJunior" || ch === "RedBullRookies") { add(3, "Stock600", 46, 54); add(3, "SportBike", 46, 54); add(0.7, "Moto2Euro", 50, 56); }
     else if (ch === "Moto3") { add(2, "Moto2Euro", 55, 61); add(2.8, "SportBike", 46, 54); add(2.3, "Supersport", 66, 72); add(0.5, "Stock600", 48, 54); }
-    else if (ch === "Moto2") { add(2.6, "Supersport", 67, 74); add(2.5, "Moto2Euro", 55, 62); add(1.5, "NAT", 55, 70); add(0.6, "WorldSBK", 69, 76); }
+    else if (ch === "Moto2") {
+      if (state.age >= 27) { add(4.5, "Supersport", 67, 74); add(1.8, "WorldSBK", 69, 76); add(1.6, "NAT", 55, 70); add(0.5, "Moto2Euro", 55, 62); }
+      else { add(2.6, "Supersport", 67, 74); add(2.5, "Moto2Euro", 55, 62); add(1.5, "NAT", 55, 70); add(0.6, "WorldSBK", 69, 76); }
+    }
     else if (ch === "Moto2Euro") { add(3.4, "NAT", 50, 65); add(1.2, "Supersport", 65, 71); add(1, "SportBike", 50, 58); add(0.4, "Stock600", 50, 56); }
     else if (ch === "Supersport") { add(1.7, "NAT", 55, 70); add(1.5, "SportBike", 46, 54); add(1, "Moto2Euro", 56, 62); }
     else if (ch === "SportBike") { add(3, "Stock600", 46, 54); add(state.age <= 21 ? 0.15 : 2, "NAT", 52, 66); add(1.5, "Moto2Euro", 55, 60); }
@@ -1605,6 +1610,9 @@ function generateMarketOffers() {
     if (posNow >= 15)     maxExits = uq < 0.15 ? 0 : uq < 0.60 ? 1 : 2;
     else if (posNow >= 9) maxExits = uq < 0.35 ? 0 : uq < 0.80 ? 1 : 2;
     else                  maxExits = uq < 0.50 ? 0 : uq < 0.90 ? 1 : 2;
+  }
+  if (state.championship === "Moto2" && state.age >= 27 && !forcedExit && !badStreak) {
+    maxExits = Math.max(maxExits, Math.random() < 0.4 ? 2 : 1);
   }
   const exitCount = () => picks.filter((p) => !p.promo && p.championship !== state.championship).length;
   for (let slot = 0; slot < extraPicksNeeded && picks.length < extraPicksNeeded; slot++) {
@@ -2073,7 +2081,7 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // simple vista (sd ~3.5 puntos, casi nunca más de ±5).
   const seasonForm = noise(2.8);
   const playerRating = state.ovr * w.rider + state.team.strength * w.team
-    + (isMoto3RookieSeason ? 2 : 0) + seasonForm;
+    + (isMoto3RookieSeason ? 2 : 0) + seasonForm + 1.0; // AJUSTE: +1 de rating, un pelín más fácil
 
   // Nivel base de cada rival para toda la temporada (su sitio dentro del
   // pelotón), heredado (con una ligera deriva) de la temporada anterior.
