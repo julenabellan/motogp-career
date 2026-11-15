@@ -1911,7 +1911,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   else if (perfFactor > 0 && lastG === 2) perfFactor *= 0.8;
 
   // 4. Azar — más amplio en pilotos irregulares (baja "consistency").
-  const luckSpread = lerp(0.5, 1.9, 1 - p.consistency);
+  const luckSpread = lerp(0.4, 1.5, 1 - p.consistency);
   const luck = noise(luckSpread);
 
   // 5. Adaptación a un cambio de equipo o categoría.
@@ -1929,7 +1929,16 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
     recovery = Math.min(1.5, 0.5 * state.bottomStreak);
   }
 
-  let growth = base + ageFactor + perfFactor + luck + adaptBonus + arcDrift + recovery;
+  // INERCIA: la progresión sigue una tendencia (subes poco a poco o bajas
+  // poco a poco) en vez de dar bandazos temporada a temporada. El crecimiento
+  // "de fondo" se mezcla con la tendencia de los años anteriores; los
+  // eventos y shocks (lesiones, cambios de categoría, giros de guion) se
+  // suman aparte, así que siguen pudiendo romper la tendencia de vez en cuando.
+  let core = base + ageFactor + perfFactor + luck + adaptBonus + arcDrift + recovery;
+  const prevTrend = state.growthTrend == null ? core : state.growthTrend;
+  core = 0.55 * core + 0.45 * prevTrend;
+  state.growthTrend = core;
+  let growth = core;
 
   // 6. Evento de desarrollo — poco frecuente, cambia la historia de la
   // temporada (para bien o para mal).
