@@ -1593,6 +1593,20 @@ function generateMarketOffers() {
       if (x.team.name !== state.team.name && !picks.some((p) => sameOffer(p, x))) picks.push(x);
     }
   }
+  // CUOTA de salidas: de las tarjetas extra, cuántas pueden ser para SALIR
+  // del campeonato (las subidas no cuentan: son buenas noticias). Varía cada
+  // vez: tras una temporada floja puede haber 0, 1 o 2 salidas (más
+  // probables cuanto peor fue), y el resto son para quedarte. Así un 10º en
+  // MotoGP o una mala temporada en Moto2 no siempre significa "2 para irte".
+  const posNow = lastSeason ? lastSeason.pos : 10;
+  const uq = Math.random();
+  let maxExits = 3;
+  if (!forcedExit && !badStreak) {
+    if (posNow >= 15)     maxExits = uq < 0.15 ? 0 : uq < 0.60 ? 1 : 2;
+    else if (posNow >= 9) maxExits = uq < 0.35 ? 0 : uq < 0.80 ? 1 : 2;
+    else                  maxExits = uq < 0.50 ? 0 : uq < 0.90 ? 1 : 2;
+  }
+  const exitCount = () => picks.filter((p) => !p.promo && p.championship !== state.championship).length;
   for (let slot = 0; slot < extraPicksNeeded && picks.length < extraPicksNeeded; slot++) {
     const cands = buildSpecialPicks()
       .filter((c) => c.team.name !== state.team.name && !picks.some((p) => sameOffer(p, c)) && !destTaken(c))
@@ -1604,7 +1618,7 @@ function generateMarketOffers() {
     }
     const hasPromoRoute = cands.some((c) => c.promo);
     // Salida lateral lógica de la categoría (según el perfil de la temporada)
-    if (!forcedExit && !(multiPromo && hasPromoRoute) && Math.random() < lateralP) {
+    if (!forcedExit && !(multiPromo && hasPromoRoute) && exitCount() < maxExits && Math.random() < lateralP) {
       const lat = lateralOffer();
       if (lat && lat.team.name !== state.team.name && lat.championship !== state.championship &&
           !picks.some((p) => p.championship === lat.championship || sameOffer(p, lat))) {
@@ -1612,12 +1626,14 @@ function generateMarketOffers() {
         continue;
       }
     }
-    if (!forcedExit && !badStreak && !(multiPromo && hasPromoRoute) && sameLevelCandidates.length && Math.random() < stayProb) {
+    if (!forcedExit && !badStreak && !(multiPromo && hasPromoRoute) && sameLevelCandidates.length &&
+        (Math.random() < stayProb || exitCount() >= maxExits)) {
       picks.push(sameLevelCandidates.shift());
       continue;
     }
     const pool = cands.filter((c) => !c.promo);
-    if (pool.length) picks.push(pool[randInt(0, pool.length - 1)]);
+    if (pool.length && exitCount() < maxExits) picks.push(pool[randInt(0, pool.length - 1)]);
+    else if (!forcedExit && !badStreak && sameLevelCandidates.length) picks.push(sameLevelCandidates.shift());
   }
   if (picks.length > extraPicksNeeded) picks.length = extraPicksNeeded;
   // Salida obligatoria (campeón de Moto2 Europeo / Stock 600): si aún faltan
@@ -1905,35 +1921,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
     recovery = Math.min(1.5, 0.5 * state.bottomStreak);
   }
 
-  // 5c. ESTILO DE CARRERA según tus decisiones: quedarte 3+ años en el mismo
-  // equipo da continuidad (se rinde algo mejor); cambiar de equipo casi cada
-  // año (3+ cambios en las últimas 4 temporadas) cuesta adaptación.
-  let styleBonus = 0, styleEvent = null;
-  {
-    const h = state.history;
-    let t = 0;
-    for (let i = h.length - 1; i >= 0 && h[i].team === state.team.name; i--) t++;
-    const last4 = h.slice(-4);
-    let changes = 0;
-    for (let i = 1; i < last4.length; i++) if (last4[i].team !== last4[i - 1].team) changes++;
-    if (!categoryChanged && t + 1 >= 3) {
-      styleBonus = 0.35;
-      if (state.careerStyle !== "continuista") {
-        state.careerStyle = "continuista";
-        styleEvent = { text: "Se asienta en el equipo: la continuidad le sienta bien", kind: "positive" };
-      }
-    } else if (changes >= 3) {
-      styleBonus = -0.35;
-      if (state.careerStyle !== "trotamundos") {
-        state.careerStyle = "trotamundos";
-        styleEvent = { text: "Tantos cambios de equipo le cuestan adaptación", kind: "negative" };
-      }
-    } else {
-      state.careerStyle = "equilibrado";
-    }
-  }
-
-  let growth = base + ageFactor + perfFactor + luck + adaptBonus + arcDrift + recovery + styleBonus;
+  let growth = base + ageFactor + perfFactor + luck + adaptBonus + arcDrift + recovery;
 
   // 6. Evento de desarrollo — poco frecuente, cambia la historia de la
   // temporada (para bien o para mal).
@@ -1968,7 +1956,6 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
     eventText = Math.random() < 0.5 ? "Lesión grave que condiciona toda la temporada" : "Crisis de confianza y de motivación";
     eventKind = "negative";
   }
-  if (!eventText && styleEvent) { eventText = styleEvent.text; eventKind = styleEvent.kind; }
   // 6c. Cambio de guion de la trayectoria (ver 1a): tiene prioridad como historia.
   if (arcEvent) { eventText = arcEvent.text; eventKind = arcEvent.kind; }
 
