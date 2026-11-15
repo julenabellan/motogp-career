@@ -345,10 +345,10 @@ $("#btn-back-nacionalidad").addEventListener("click", () => showScreen("screen-n
 //  60% normal · 25% muy bueno · 10% con mucho talento ·
 //   4% futuro campeón · 1% fenómeno generacional.
 const RIDER_TIERS = [
-  { key: "normal",        weight: 0.60, potential: [74, 86], learningRate: [0.55, 0.85], breakout: [0.02, 0.05] },
-  { key: "muyBueno",      weight: 0.25, potential: [85, 90], learningRate: [0.75, 1.00], breakout: [0.04, 0.08] },
-  { key: "talento",       weight: 0.10, potential: [89, 93], learningRate: [0.90, 1.15], breakout: [0.06, 0.11] },
-  { key: "futuroCampeon", weight: 0.04, potential: [92, 96], learningRate: [1.05, 1.30], breakout: [0.08, 0.14] },
+  { key: "normal",        weight: 0.66, potential: [74, 86], learningRate: [0.55, 0.85], breakout: [0.02, 0.05] },
+  { key: "muyBueno",      weight: 0.23, potential: [85, 90], learningRate: [0.75, 1.00], breakout: [0.04, 0.08] },
+  { key: "talento",       weight: 0.07, potential: [89, 93], learningRate: [0.90, 1.15], breakout: [0.06, 0.11] },
+  { key: "futuroCampeon", weight: 0.03, potential: [92, 96], learningRate: [1.05, 1.30], breakout: [0.08, 0.14] },
   { key: "fenomeno",      weight: 0.01, potential: [95, 99], learningRate: [1.20, 1.50], breakout: [0.10, 0.18] },
 ];
 
@@ -393,12 +393,12 @@ function curveMultiplier(curve, age) {
 // piloto sigue un guion distinto. Así no todas las carreras acaban en un
 // 80 y pico: hay lentas, estancadas, promesas que se rompen, remontadas...
 const CAREER_ARCS = [
-  { key: "normal",      weight: 0.34 },
-  { key: "lento",       weight: 0.17 }, // progresa despacio, techo más bajo
-  { key: "estancado",   weight: 0.13 }, // sube y se queda clavado hacia los 20-24
-  { key: "promesaRota", weight: 0.11 }, // arranca fuerte y se rompe
-  { key: "remontada",   weight: 0.13 }, // flojo al principio, da la vuelta
-  { key: "estrella",    weight: 0.12 }, // sube más rápido y más alto
+  { key: "normal",      weight: 0.46 },
+  { key: "lento",       weight: 0.13 }, // progresa despacio, techo más bajo
+  { key: "estancado",   weight: 0.10 }, // sube y se queda clavado hacia los 20-24
+  { key: "promesaRota", weight: 0.08 }, // arranca fuerte y se rompe
+  { key: "remontada",   weight: 0.15 }, // flojo al principio, da la vuelta
+  { key: "estrella",    weight: 0.08 }, // sube más rápido y más alto
 ];
 function pickArc() {
   let r = Math.random();
@@ -1102,7 +1102,7 @@ function generateMarketOffers() {
     const stuckGate = tenure >= (Math.random() < 0.5 ? 2 : 3);
     if (stuckGate) {
       const outsideTop7 = lastSeason.pos > 7;
-      const nationalChance = outsideTop7 ? 0.19 : 0.16;
+      const nationalChance = outsideTop7 ? 0.17 : 0.14;
       const sspWidth = outsideTop7 ? 0.23 : 0.18;
       const euroWidth = 0.23;
       const r = Math.random();
@@ -1561,14 +1561,14 @@ function generateMarketOffers() {
     const add = (w, champ, lo, hi) => opts.push({ w, champ, lo, hi });
     if (ch === "MotoJunior" || ch === "RedBullRookies") { add(3, "Stock600", 46, 54); add(3, "SportBike", 46, 54); add(0.7, "Moto2Euro", 50, 56); }
     else if (ch === "Moto3") { add(2, "Moto2Euro", 55, 61); add(2.8, "SportBike", 46, 54); add(2.3, "Supersport", 66, 72); add(0.5, "Stock600", 48, 54); }
-    else if (ch === "Moto2") { add(2.6, "Supersport", 67, 74); add(2.5, "Moto2Euro", 55, 62); add(1.7, "NAT", 55, 70); add(0.6, "WorldSBK", 69, 76); }
-    else if (ch === "Moto2Euro") { add(4, "NAT", 50, 65); add(1.2, "Supersport", 65, 71); add(1, "SportBike", 50, 58); add(0.4, "Stock600", 50, 56); }
-    else if (ch === "Supersport") { add(2, "NAT", 55, 70); add(1.5, "SportBike", 46, 54); add(1, "Moto2Euro", 56, 62); }
+    else if (ch === "Moto2") { add(2.6, "Supersport", 67, 74); add(2.5, "Moto2Euro", 55, 62); add(1.5, "NAT", 55, 70); add(0.6, "WorldSBK", 69, 76); }
+    else if (ch === "Moto2Euro") { add(3.4, "NAT", 50, 65); add(1.2, "Supersport", 65, 71); add(1, "SportBike", 50, 58); add(0.4, "Stock600", 50, 56); }
+    else if (ch === "Supersport") { add(1.7, "NAT", 55, 70); add(1.5, "SportBike", 46, 54); add(1, "Moto2Euro", 56, 62); }
     else if (ch === "SportBike") { add(3, "Stock600", 46, 54); add(state.age <= 21 ? 0.15 : 2, "NAT", 52, 66); add(1.5, "Moto2Euro", 55, 60); }
-    else if (ch === "MotoGP") { add(4, "WorldSBK", 69, 77); add(0.8, "NAT", 58, 72); }
-    else if (ch === "WorldSBK") { add(4, "NAT", 55, 70); add(1.5, "Supersport", 67, 74); }
-    else if (NATIONAL_CHAMPS.includes(ch)) { add(3, "NAT", 52, 68); add(1.5, "Supersport", 66, 72); add(1, "Moto2Euro", 55, 62); add(1, "SportBike", 50, 58); }
-    else if (ch === "Stock600") { add(2, "SportBike", 50, 58); add(1.5, "NAT", 50, 64); add(1, "Moto2Euro", 52, 58); }
+    else if (ch === "MotoGP") { add(4, "WorldSBK", 69, 77); add(0.7, "NAT", 58, 72); }
+    else if (ch === "WorldSBK") { add(3.4, "NAT", 55, 70); add(1.5, "Supersport", 67, 74); }
+    else if (NATIONAL_CHAMPS.includes(ch)) { add(2.6, "NAT", 52, 68); add(1.5, "Supersport", 66, 72); add(1, "Moto2Euro", 55, 62); add(1, "SportBike", 50, 58); }
+    else if (ch === "Stock600") { add(2, "SportBike", 50, 58); add(1.3, "NAT", 50, 64); add(1, "Moto2Euro", 52, 58); }
     if (!opts.length) return null;
     let r = Math.random() * opts.reduce((a, o) => a + o.w, 0), o = opts[0];
     for (const x of opts) { r -= x.w; if (r <= 0) { o = x; break; } }
@@ -1663,6 +1663,7 @@ function generateMarketOffers() {
       const p = picks[i];
       if (state.championship === "SportBike" && state.age <= 21 &&
           NATIONAL_CHAMPS.includes(p.championship) && Math.random() < 0.9) picks.splice(i, 1);
+      else if (NATIONAL_CHAMPS.includes(p.championship) && !forcedExit && Math.random() < 0.28) picks.splice(i, 1);
       else if (state.championship === "MotoGP" && state.age <= 27 && tenure <= 2 &&
           p.championship === "WorldSBK" && !(lastSeason && lastSeason.pos >= 13) && !nonRenewal) picks.splice(i, 1);
     }
@@ -1795,7 +1796,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // más cuesta seguir subiendo — así superar los 88-90 queda reservado de
   // verdad a los pilotos con mucho potencial Y buen ritmo de aprendizaje
   // (los "muy top"), no a cualquiera que se vaya acercando a su techo.
-  const highOvrWall = state.ovr >= 85 ? clamp(1 - (state.ovr - 85) / 10, 0.15, 1) : 1;
+  const highOvrWall = state.ovr >= 82 ? clamp(1 - (state.ovr - 82) / 10, 0.15, 1) : 1;
   base *= highOvrWall;
 
   // 1a. Trayectoria de la carrera (ver CAREER_ARCS). Pueden dispararse una
@@ -1886,7 +1887,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   else if (perfFactor > 0 && lastG === 2) perfFactor *= 0.8;
 
   // 4. Azar — más amplio en pilotos irregulares (baja "consistency").
-  const luckSpread = lerp(0.5, 2.4, 1 - p.consistency);
+  const luckSpread = lerp(0.5, 1.9, 1 - p.consistency);
   const luck = noise(luckSpread);
 
   // 5. Adaptación a un cambio de equipo o categoría.
@@ -1904,7 +1905,35 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
     recovery = Math.min(1.5, 0.5 * state.bottomStreak);
   }
 
-  let growth = base + ageFactor + perfFactor + luck + adaptBonus + arcDrift + recovery;
+  // 5c. ESTILO DE CARRERA según tus decisiones: quedarte 3+ años en el mismo
+  // equipo da continuidad (se rinde algo mejor); cambiar de equipo casi cada
+  // año (3+ cambios en las últimas 4 temporadas) cuesta adaptación.
+  let styleBonus = 0, styleEvent = null;
+  {
+    const h = state.history;
+    let t = 0;
+    for (let i = h.length - 1; i >= 0 && h[i].team === state.team.name; i--) t++;
+    const last4 = h.slice(-4);
+    let changes = 0;
+    for (let i = 1; i < last4.length; i++) if (last4[i].team !== last4[i - 1].team) changes++;
+    if (!categoryChanged && t + 1 >= 3) {
+      styleBonus = 0.35;
+      if (state.careerStyle !== "continuista") {
+        state.careerStyle = "continuista";
+        styleEvent = { text: "Se asienta en el equipo: la continuidad le sienta bien", kind: "positive" };
+      }
+    } else if (changes >= 3) {
+      styleBonus = -0.35;
+      if (state.careerStyle !== "trotamundos") {
+        state.careerStyle = "trotamundos";
+        styleEvent = { text: "Tantos cambios de equipo le cuestan adaptación", kind: "negative" };
+      }
+    } else {
+      state.careerStyle = "equilibrado";
+    }
+  }
+
+  let growth = base + ageFactor + perfFactor + luck + adaptBonus + arcDrift + recovery + styleBonus;
 
   // 6. Evento de desarrollo — poco frecuente, cambia la historia de la
   // temporada (para bien o para mal).
@@ -1916,7 +1945,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // un salto grande; otras te pierdes por completo y retrocedes bastante.
   // Cuando esto ocurre, sustituye a los eventos de desarrollo normales de
   // esa temporada (la transición ya es, de por sí, la historia del año).
-  if (categoryChanged && Math.random() < 0.15) {
+  if (categoryChanged && Math.random() < 0.10) {
     const positive = Math.random() < 0.5;
     growth += positive ? rand(3.5, 7) : rand(-7, -3.5);
     eventText = positive
@@ -1939,6 +1968,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
     eventText = Math.random() < 0.5 ? "Lesión grave que condiciona toda la temporada" : "Crisis de confianza y de motivación";
     eventKind = "negative";
   }
+  if (!eventText && styleEvent) { eventText = styleEvent.text; eventKind = styleEvent.kind; }
   // 6c. Cambio de guion de la trayectoria (ver 1a): tiene prioridad como historia.
   if (arcEvent) { eventText = arcEvent.text; eventKind = arcEvent.kind; }
 
@@ -2054,7 +2084,7 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
   // AJUSTE (más azar): "forma de la temporada" del piloto — un año puede
   // salir algo mejor o peor de lo que dice su rating, sin que se note a
   // simple vista (sd ~3.5 puntos, casi nunca más de ±5).
-  const seasonForm = noise(3.5);
+  const seasonForm = noise(2.8);
   const playerRating = state.ovr * w.rider + state.team.strength * w.team
     + (isMoto3RookieSeason ? 2 : 0) + seasonForm;
 
@@ -2153,8 +2183,12 @@ function simulateSeason(categoryChanged = false, previousChampionship = null) {
       champDampChance = isMoto3RookieSeason ? 0.80 : 0.85;
       top3DampChance = isMoto3RookieSeason ? 0.75 : 0.80;
     } else if (isSophomoreSeason) {
-      champDampChance = 0.35;
-      top3DampChance = 0.30;
+      // FIX: en Moto2/Moto3 la 1ª temporada NO se recortaba pero la 2ª sí
+      // (35%), así que la segunda salía peor. Ahora esas dos no se recortan
+      // y en el resto solo queda un residuo pequeño.
+      const sophomoreExempt = state.championship === "Moto2" || state.championship === "Moto3";
+      champDampChance = sophomoreExempt ? 0 : 0.12;
+      top3DampChance = sophomoreExempt ? 0 : 0.10;
     }
   }
   // FIX SESGO 2º: una temporada dominante (60%+ de victorias, p. ej. 12 o
