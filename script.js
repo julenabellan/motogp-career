@@ -411,7 +411,7 @@ function generateHiddenProfile() {
   const arc = pickArc();
   const prof = _generateHiddenProfileBase(tier);
   prof.arc = arc;
-  if (arc === "lento")        { prof.learningRate *= 0.68; prof.potential = Math.max(66, prof.potential - randInt(3, 8)); }
+  if (arc === "lento")        { prof.learningRate *= 0.78; prof.potential = Math.max(68, prof.potential - randInt(2, 6)); }
   else if (arc === "estrella"){ prof.learningRate *= 1.18; prof.potential = Math.min(98, prof.potential + randInt(1, 4)); }
   else if (arc === "promesaRota") { prof.learningRate *= 1.25; prof.arcAge = randInt(20, 23); }
   else if (arc === "estancado")   { prof.arcAge = randInt(20, 24); }
@@ -1803,7 +1803,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   let arcEvent = null, arcDrift = 0;
   {
     const arc = p.arc || "normal";
-    if (arc === "lento") base *= 0.85;
+    if (arc === "lento") base *= 0.92;
     else if (arc === "estrella") base *= 1.10;
     else if (arc === "promesaRota") {
       if (state.age < p.arcAge) base *= 1.20;
@@ -1813,16 +1813,16 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
           state.potential = clamp(state.ovr + randInt(-2, 1), 55, state.potential);
           arcEvent = { text: "La promesa se rompe: su progresión se frena en seco", kind: "negative" };
         }
-        base *= 0.30;
-        if (state.age < p.arcAge + 3) arcDrift = -0.7;
+        base *= 0.40;
+        if (state.age < p.arcAge + 3) arcDrift = -0.5;
       }
     } else if (arc === "estancado" && state.age >= p.arcAge) {
       if (!p.arcDone) {
         p.arcDone = true;
-        state.potential = clamp(state.ovr + randInt(0, 2), 55, state.potential);
+        state.potential = clamp(state.ovr + randInt(1, 4), 55, state.potential);
         arcEvent = { text: "Su progresión se estanca: ya no mejora como antes", kind: "negative" };
       }
-      base *= 0.35;
+      base *= 0.50;
     } else if (arc === "remontada") {
       if (state.age < p.arcAge) base *= 0.55;
       else {
@@ -1862,7 +1862,10 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   let perfFactor = (perfRatio - 0.22) * 3;
   if (champPosition <= 3) perfFactor += (4 - champPosition) * 0.3;
   else if (champPosition >= 20) perfFactor -= 0.4;
-  perfFactor = clamp(perfFactor, -1.2, 2);
+  // Siendo joven (<=26), quedar en la cola no te hace peor piloto: se sigue
+  // aprendiendo. Sin este suelo, perder genera menos media y eso más derrotas
+  // (la espiral de "siempre último").
+  perfFactor = clamp(perfFactor, state.age <= 26 ? -0.4 : -1.2, 2);
   // Un buen resultado pesa menos en campeonatos de menor nivel: ganar el
   // Europeo de Moto2 no puede subir la media como ganar en un Mundial.
   // NIVEL del campeonato: ganar uno fácil (SportBike, Stock 600, Europeo,
@@ -1891,7 +1894,17 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
     ? (p.adaptability - 1) * 1.6 + rand(-0.5, 0.5)
     : 0;
 
-  let growth = base + ageFactor + perfFactor + luck + adaptBonus + arcDrift;
+  // 5b. Recuperación: tras temporadas seguidas en la cola (15º o peor) el
+  // piloto "da la vuelta" poco a poco — aprende de los malos resultados.
+  // Solo actúa si todavía hay margen hasta su techo y no afecta a quien
+  // pelea arriba.
+  state.bottomStreak = champPosition >= 15 ? (state.bottomStreak || 0) + 1 : 0;
+  let recovery = 0;
+  if (state.bottomStreak >= 1 && state.potential - state.ovr >= 4 && state.age <= 30) {
+    recovery = Math.min(1.5, 0.5 * state.bottomStreak);
+  }
+
+  let growth = base + ageFactor + perfFactor + luck + adaptBonus + arcDrift + recovery;
 
   // 6. Evento de desarrollo — poco frecuente, cambia la historia de la
   // temporada (para bien o para mal).
