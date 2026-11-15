@@ -389,8 +389,38 @@ function curveMultiplier(curve, age) {
   return 1.0;
 }
 
+// TRAYECTORIA de la carrera (oculta): además del techo y el ritmo, cada
+// piloto sigue un guion distinto. Así no todas las carreras acaban en un
+// 80 y pico: hay lentas, estancadas, promesas que se rompen, remontadas...
+const CAREER_ARCS = [
+  { key: "normal",      weight: 0.34 },
+  { key: "lento",       weight: 0.17 }, // progresa despacio, techo más bajo
+  { key: "estancado",   weight: 0.13 }, // sube y se queda clavado hacia los 20-24
+  { key: "promesaRota", weight: 0.11 }, // arranca fuerte y se rompe
+  { key: "remontada",   weight: 0.13 }, // flojo al principio, da la vuelta
+  { key: "estrella",    weight: 0.12 }, // sube más rápido y más alto
+];
+function pickArc() {
+  let r = Math.random();
+  for (const a of CAREER_ARCS) { r -= a.weight; if (r <= 0) return a.key; }
+  return "normal";
+}
+
 function generateHiddenProfile() {
   const tier = pickTier();
+  const arc = pickArc();
+  const prof = _generateHiddenProfileBase(tier);
+  prof.arc = arc;
+  if (arc === "lento")        { prof.learningRate *= 0.68; prof.potential = Math.max(66, prof.potential - randInt(3, 8)); }
+  else if (arc === "estrella"){ prof.learningRate *= 1.18; prof.potential = Math.min(98, prof.potential + randInt(1, 4)); }
+  else if (arc === "promesaRota") { prof.learningRate *= 1.25; prof.arcAge = randInt(20, 23); }
+  else if (arc === "estancado")   { prof.arcAge = randInt(20, 24); }
+  else if (arc === "remontada")   { prof.learningRate *= 0.65; prof.arcAge = randInt(22, 26); prof.potential = Math.max(prof.potential, 80); }
+  prof.arcDone = false;
+  return prof;
+}
+
+function _generateHiddenProfileBase(tier) {
   return {
     tier: tier.key,                                                  // nunca se muestra al jugador
     potential: randInt(tier.potential[0], tier.potential[1]),         // techo real (oculto)
@@ -1768,6 +1798,44 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   const highOvrWall = state.ovr >= 85 ? clamp(1 - (state.ovr - 85) / 10, 0.15, 1) : 1;
   base *= highOvrWall;
 
+  // 1a. Trayectoria de la carrera (ver CAREER_ARCS). Pueden dispararse una
+  // sola vez cambios de guion, que quedan contados como evento de la temporada.
+  let arcEvent = null, arcDrift = 0;
+  {
+    const arc = p.arc || "normal";
+    if (arc === "lento") base *= 0.85;
+    else if (arc === "estrella") base *= 1.10;
+    else if (arc === "promesaRota") {
+      if (state.age < p.arcAge) base *= 1.20;
+      else {
+        if (!p.arcDone) {
+          p.arcDone = true;
+          state.potential = clamp(state.ovr + randInt(-2, 1), 55, state.potential);
+          arcEvent = { text: "La promesa se rompe: su progresión se frena en seco", kind: "negative" };
+        }
+        base *= 0.30;
+        if (state.age < p.arcAge + 3) arcDrift = -0.7;
+      }
+    } else if (arc === "estancado" && state.age >= p.arcAge) {
+      if (!p.arcDone) {
+        p.arcDone = true;
+        state.potential = clamp(state.ovr + randInt(0, 2), 55, state.potential);
+        arcEvent = { text: "Su progresión se estanca: ya no mejora como antes", kind: "negative" };
+      }
+      base *= 0.35;
+    } else if (arc === "remontada") {
+      if (state.age < p.arcAge) base *= 0.55;
+      else {
+        if (!p.arcDone) {
+          p.arcDone = true;
+          state.potential = Math.min(94, state.potential + randInt(3, 6));
+          arcEvent = { text: "Algo hace clic: empieza a dar el salto que no llegaba", kind: "positive" };
+        }
+        if (state.age < p.arcAge + 4) base *= 1.6;
+      }
+    }
+  }
+
   // 1b. Impulso de novato: los primeros años en Moto3 (16-18 años) suelen
   // ser de aprendizaje muy rápido en la vida real — se nota incluso en los
   // pilotos de progresión más lenta. Se difumina hacia los 20.
@@ -1797,9 +1865,22 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   perfFactor = clamp(perfFactor, -1.2, 2);
   // Un buen resultado pesa menos en campeonatos de menor nivel: ganar el
   // Europeo de Moto2 no puede subir la media como ganar en un Mundial.
-  const lowTier = { Moto2Euro: 0.7, Stock600: 0.85 }[state.championship];
-  const tierMult = NATIONAL_CHAMPS.includes(state.championship) ? 0.85 : lowTier;
-  if (tierMult && perfFactor > 0) perfFactor *= tierMult; // solo recorta lo positivo
+  // NIVEL del campeonato: ganar uno fácil (SportBike, Stock 600, Europeo,
+  // júnior...) dice mucho menos de tu nivel que ganar en un Mundial, así que
+  // el premio por buenos resultados se pondera. Solo recorta lo positivo.
+  const CHAMP_PERF_WEIGHT = {
+    MotoJunior: 0.65, RedBullRookies: 0.75, YamahaR3Cup: 0.60,
+    Stock600: 0.60, Moto2Euro: 0.60, SportBike: 0.65,
+    Moto3: 0.90, Supersport: 0.85,
+  };
+  const tierMult = NATIONAL_CHAMPS.includes(state.championship) ? 0.80 : CHAMP_PERF_WEIGHT[state.championship];
+  if (tierMult && perfFactor > 0) perfFactor *= tierMult;
+  // Y no se encadenan los saltos: si ya vienes de una subida grande, el
+  // premio por resultados se enfría (ganar un título tras otro desde un nivel
+  // bajo no te catapulta sin fin).
+  const lastG = state.lastGrowth || 0;
+  if (perfFactor > 0 && lastG >= 3) perfFactor *= 0.55;
+  else if (perfFactor > 0 && lastG === 2) perfFactor *= 0.8;
 
   // 4. Azar — más amplio en pilotos irregulares (baja "consistency").
   const luckSpread = lerp(0.5, 2.4, 1 - p.consistency);
@@ -1810,7 +1891,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
     ? (p.adaptability - 1) * 1.6 + rand(-0.5, 0.5)
     : 0;
 
-  let growth = base + ageFactor + perfFactor + luck + adaptBonus;
+  let growth = base + ageFactor + perfFactor + luck + adaptBonus + arcDrift;
 
   // 6. Evento de desarrollo — poco frecuente, cambia la historia de la
   // temporada (para bien o para mal).
@@ -1839,6 +1920,15 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
     eventText = ev.text; eventKind = "negative";
   }
 
+  // 6b. Lesión grave / crisis (rara): temporada perdida en lo físico o mental.
+  if (!eventText && Math.random() < 0.03) {
+    growth += rand(-5.5, -3);
+    eventText = Math.random() < 0.5 ? "Lesión grave que condiciona toda la temporada" : "Crisis de confianza y de motivación";
+    eventKind = "negative";
+  }
+  // 6c. Cambio de guion de la trayectoria (ver 1a): tiene prioridad como historia.
+  if (arcEvent) { eventText = arcEvent.text; eventKind = arcEvent.kind; }
+
   growth = clamp(growth, -6, 6);
   let rounded = Math.round(growth);
 
@@ -1856,7 +1946,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
   // FIX: antes se sumaba también al cambiar de equipo dentro de MotoGP/WorldSBK.
   if (previousChampionship != null && previousChampionship !== state.championship &&
       (state.championship === "MotoGP" || state.championship === "WorldSBK")) {
-    rounded += 2;
+    rounded += Math.random() < 0.5 ? 1 : 2;
   }
 
   // 8. Cierre del salto de graduación (2ª parte): si el piloto llegó a
@@ -1874,6 +1964,7 @@ function computeSeasonGrowth(pts, champPosition, categoryChanged, previousChampi
     state.juniorGradTarget = null;
   }
 
+  state.lastGrowth = rounded;
   return { growth: rounded, eventText };
 }
 
